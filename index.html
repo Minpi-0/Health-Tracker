@@ -53,7 +53,6 @@
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
         
-        /* 移除陰影與焦點輪廓 */
         input, textarea, button, select { 
             font-size: 14px !important; 
             box-shadow: none !important;
@@ -64,7 +63,6 @@
         .animate-progress { transition: width 1.5s cubic-bezier(0.34, 1.56, 0.64, 1); }
         .glass { background: rgba(255, 255, 255, 0.8); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); }
 
-        /* 日期選擇器精確控制 */
         .date-input-container {
             position: relative;
             display: flex;
@@ -111,6 +109,7 @@
 <body>
     <div id="root"></div>
 
+    <!-- 填寫說明：部署到 Vercel 前，請務必將下方的 config 替換成妳自己的 Firebase 金鑰 -->
     <script type="text/babel" data-type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
@@ -118,14 +117,28 @@
 
         const { useState, useMemo, useEffect, useRef } = React;
 
-        const firebaseConfig = typeof __firebase_config !== 'undefined' 
-            ? JSON.parse(__firebase_config) 
-            : { apiKey: "", authDomain: "", projectId: "", storageBucket: "", messagingSenderId: "", appId: "" };
+        // --- 重要：在此填入妳的 Firebase 設定 ---
+        const myFirebaseConfig = {
+            apiKey: "", // 例如: "AIzaSy..."
+            authDomain: "",
+            projectId: "",
+            storageBucket: "",
+            messagingSenderId: "",
+            appId: ""
+        };
 
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-        const db = getFirestore(app);
-        const currentAppId = typeof __app_id !== 'undefined' ? __app_id : 'k-glow-tracker';
+        // 偵測環境：如果是 Canvas 則使用注入的變數，如果是 Vercel 則使用手填的 config
+        const firebaseConfig = (typeof __firebase_config !== 'undefined' && __firebase_config) 
+            ? JSON.parse(__firebase_config) 
+            : myFirebaseConfig;
+
+        // 檢查是否已填寫金鑰，避免白屏崩潰
+        const isConfigReady = firebaseConfig && firebaseConfig.apiKey !== "";
+
+        const app = isConfigReady ? initializeApp(firebaseConfig) : null;
+        const auth = app ? getAuth(app) : null;
+        const db = app ? getFirestore(app) : null;
+        const currentAppId = typeof __app_id !== 'undefined' ? __app_id : 'k-glow-tracker-vercel';
 
         const Icon = ({ name, size = 24, className = "", fill = "none" }) => {
             const wrapperRef = useRef(null);
@@ -141,36 +154,14 @@
             return <span ref={wrapperRef} className="inline-flex items-center justify-center shrink-0" style={{ width: size, height: size }} />;
         };
 
-        // --- 靜態資料常數 ---
         const DAILY_REINFORCEMENTS = [
-            { 
-                name: '死蟲式 (Dead Bug)', 
-                desc: '根據報告顯示妳的深層核心支撐力尚有進步空間，這項練習能幫助妳在穩定骨盆的同時強化腹內斜肌，改善日常站姿的代償。' 
-            },
-            { 
-                name: '貓牛式 (Cat-Cow)', 
-                desc: '考量到妳近期反應背部緊繃感較明顯，建議透過脊椎的逐節律動，幫助妳找回脊椎受力平衡，有效減緩久坐帶來的不適。' 
-            },
-            { 
-                name: '鳥狗式 (Bird-Dog)', 
-                desc: '根據動作評估發現妳的交叉鏈穩定性需要加強，這項練習能幫助妳在動態中維持軀幹穩定，讓妳的皮拉提斯動作更精準到位。' 
-            },
-            { 
-                name: '臀橋 (Glute Bridge)', 
-                desc: '觀察到妳在走動時大腿前側參與過多，透過啟動臀大肌，能幫助妳平衡下半身肌群受力，同時給予下背部更穩固的支撐。' 
-            },
-            { 
-                name: '天鵝式 (Swan)', 
-                desc: '注意到妳在報告中提到的圓肩困擾，這項開展動作能幫助妳強化上背肌群並打開胸椎空間，讓妳的體態看起來更優雅修長。' 
-            },
-            { 
-                name: '側板式 (Side Plank)', 
-                desc: '考量到側彎對線的對稱性需求，這項練習能針對妳較弱的一側進行側向支撐強化，幫助妳找回身體中心線的平衡。' 
-            },
-            { 
-                name: '孩童式 (Child\'s Pose)', 
-                desc: '感覺到妳今天的生理與心理壓力較大，最後這項呼吸引導能幫助妳放鬆副交感神經，為今天的努力畫下最完美的句點。' 
-            }
+            { name: '死蟲式 (Dead Bug)', desc: '根據報告顯示妳的深層核心支撐力尚有進步空間，這項練習能幫助妳在穩定骨盆的同時強化腹內斜肌，改善日常站姿的代償。' },
+            { name: '貓牛式 (Cat-Cow)', desc: '考量到妳近期反應背部緊繃感較明顯，建議透過脊椎的逐節律動，幫助妳找回脊椎受力平衡，有效減緩久坐帶來的不適。' },
+            { name: '鳥狗式 (Bird-Dog)', desc: '根據動作評估發現妳的交叉鏈穩定性需要加強，這項練習能幫助妳在動態中維持軀幹穩定，讓妳的皮拉提斯動作更精準到位。' },
+            { name: '臀橋 (Glute Bridge)', desc: '觀察到妳在走動時大腿前側參與過多，透過啟動臀大肌，能幫助妳平衡下半身肌群受力，同時給予下背部更穩固的支撐。' },
+            { name: '天鵝式 (Swan)', desc: '注意到妳在報告中提到的圓肩困擾，這項開展動作能幫助妳強化上背肌群並打開胸椎空間，讓妳的體態看起來更優雅修長。' },
+            { name: '側板式 (Side Plank)', desc: '考量到側彎對線的對稱性需求，這項練習能針對妳較弱的一側進行側向支撐強化，幫助妳找回身體中心線的平衡。' },
+            { name: '孩童式 (Child\'s Pose)', desc: '感覺到妳今天的生理與心理壓力較大，最後這項呼吸引導能幫助妳放鬆副交感神經，為今天的努力畫下最完美的句點。' }
         ];
 
         const BODY_PARTS = ['核心', '上半身', '下半身', '全身流動'];
@@ -183,7 +174,6 @@
         };
 
         const App = () => {
-            // --- 狀態管理 ---
             const [user, setUser] = useState(null);
             const [loading, setLoading] = useState(true);
             const [view, setView] = useState('home'); 
@@ -216,7 +206,6 @@
             const [newPlanDate, setNewPlanDate] = useState('');
             const [newPlanTargetWeight, setNewPlanTargetWeight] = useState('');
 
-            // --- 核心計算屬性 ---
             const activePlan = useMemo(() => plans.find(p => p.id === activePlanId) || null, [plans, activePlanId]);
             const latestWeight = useMemo(() => activePlan?.workoutEntries?.[0]?.weight || activePlan?.baselineWeight || 57.1, [activePlan]);
             const daysLeft = useMemo(() => activePlan ? Math.ceil((new Date(activePlan.targetDate) - new Date()) / (1000 * 60 * 60 * 24)) : 0, [activePlan]);
@@ -225,8 +214,11 @@
             const isDietValid = useMemo(() => activePlan && Number(d_water) > 0 && (d_breakfast.trim() || d_lunch.trim() || d_dinner.trim() || d_snacks.trim()), [d_water, d_breakfast, d_lunch, d_dinner, d_snacks, activePlan]);
             const isWorkoutValid = useMemo(() => activePlan && (w_parts.length > 0 || w_exercises.length > 0), [w_parts, w_exercises, activePlan]);
 
-            // --- Firebase 效果 ---
             useEffect(() => {
+                if (!isConfigReady) {
+                    setLoading(false);
+                    return;
+                }
                 const initAuth = async () => {
                     if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) await signInWithCustomToken(auth, __initial_auth_token);
                     else await signInAnonymously(auth);
@@ -237,18 +229,16 @@
             }, []);
 
             useEffect(() => {
-                if (!user) return;
+                if (!user || !db) return;
                 const plansRef = collection(db, 'artifacts', currentAppId, 'users', user.uid, 'plans');
                 const unsubPlans = onSnapshot(plansRef, (snap) => {
                     const list = snap.docs.map(d => ({ id: d.id, ...d.data() }));
                     setPlans(list.sort((a,b) => new Date(b.targetDate) - new Date(a.targetDate)));
-                    if (list.length > 0 && !activePlanId) setActivePlanId(list[0].id);
                     setLoading(false);
-                });
+                }, (err) => { console.error(err); setLoading(false); });
                 return () => unsubPlans();
             }, [user, activePlanId]);
 
-            // --- 業務邏輯函式 ---
             const savePlanToCloud = async (updated) => {
                 if (!user || !updated.id) return;
                 await setDoc(doc(db, 'artifacts', currentAppId, 'users', user.uid, 'plans', updated.id), updated);
@@ -328,6 +318,16 @@
                 setNewPlanDate(date.toISOString().split('T')[0]);
             };
 
+            if (!isConfigReady) {
+                return (
+                    <div className="h-full flex flex-col items-center justify-center bg-red-50 p-10 text-center">
+                        <Icon name="alert-circle" size={48} className="text-red-500 mb-4" />
+                        <h2 className="text-xl font-bold mb-2">尚未配置 Firebase</h2>
+                        <p className="text-sm text-gray-600">請在 index.html 程式碼中填入妳的 Firebase 金鑰，然後再次部署即可正常使用。</p>
+                    </div>
+                );
+            }
+
             if (loading) return <div className="h-full flex flex-col items-center justify-center bg-[#f9991a] text-white gap-4"><Icon name="loader-2" className="animate-spin" /><p className="text-[14px] tracking-widest font-bold uppercase">找回 APP 中...</p></div>;
 
             return (
@@ -339,7 +339,7 @@
                                 <Icon name="trophy" size={64} className="text-accent mb-4" />
                                 <h2 className="text-[20px] font-bold mb-2">同步成功！</h2>
                                 <p className="text-[14px] leading-relaxed opacity-80">
-                                    目標已即時更新，開啟您的新衝刺。
+                                    啟動後，您的目標將即時同步至雲端，開啟新挑戰。
                                 </p>
                             </div>
                         </div>
@@ -371,7 +371,6 @@
                             <>
                                 {activePlan ? (
                                     <>
-                                        {/* 體重進度 */}
                                         <section className="bg-white/90 backdrop-blur-md rounded-kxl p-5 border border-white/20 space-y-5">
                                             <h3 className="text-[16px] font-bold text-brand uppercase tracking-widest opacity-80">目標追蹤</h3>
                                             <div className="flex items-center justify-between">
@@ -393,7 +392,6 @@
                                             </div>
                                         </section>
 
-                                        {/* 今日焦點 */}
                                         <section className="bg-white/90 backdrop-blur-md rounded-kxl p-5 border border-white/20 space-y-5 active:scale-[0.98] transition-all">
                                             <div className="space-y-2">
                                                 <h3 className="text-[16px] font-bold text-brand uppercase tracking-widest opacity-80">今日補強重點</h3>
@@ -431,7 +429,7 @@
                                     </button>
                                     <button onClick={() => setView('diet_history')} className="bg-white/90 backdrop-blur-md rounded-kxl p-page border border-white/20 flex flex-col items-center gap-3 active:scale-95 transition-all text-brand shadow-sm">
                                         <div className="w-12 h-12 rounded-kxl bg-secondary flex items-center justify-center text-primary border border-primary/10"><Icon name="utensils" size={24}/></div>
-                                        <p className="text-[16px] font-bold uppercase text-brand">飲食生活</p>
+                                        <p className="text-[16px] font-bold uppercase text-brand text-brand">飲食生活</p>
                                         <p className="text-[14px] text-primary font-bold">{activePlan?.dietEntries?.length || 0} 筆</p>
                                     </button>
                                 </div>
@@ -440,7 +438,7 @@
                             <section className="space-y-4 pb-12 animate-in fade-in slide-in-from-bottom-2 duration-500 text-brand">
                                 {view !== 'plan_manage' && (view === 'workout_history' ? activePlan?.workoutEntries : activePlan?.dietEntries)?.map(entry => (
                                     <div key={entry.id} className="flex gap-4">
-                                        <div className="w-12 shrink-0 text-center pt-2">
+                                        <div className="w-12 shrink-0 text-center pt-2 text-brand text-brand">
                                             <p className="text-[18px] font-bold leading-none">{entry.displayDate.split('月')[1].replace('日','')}</p>
                                             <p className="text-[12px] text-primary font-bold">{entry.displayDate.split('月')[0]}月</p>
                                         </div>
@@ -456,9 +454,9 @@
                                                 <div className="space-y-3">
                                                     <div className="flex justify-between items-center"><div className="flex gap-1">{(entry.tags || []).map(t => <span key={t} className="text-[12px] font-bold text-primary">#{t}</span>)}</div><div className="text-[14px] text-primary font-bold">{entry.water}cc</div></div>
                                                     <div className="text-[14px] space-y-1">
-                                                        {entry.breakfast && <div className="flex items-center gap-2 text-brand"><div className="w-1.5 h-1.5 rounded-full bg-accent" />{entry.breakfast}</div>}
-                                                        {entry.lunch && <div className="flex items-center gap-2 text-brand"><div className="w-1.5 h-1.5 rounded-full bg-accent" />{entry.lunch}</div>}
-                                                        {entry.dinner && <div className="flex items-center gap-2 text-brand"><div className="w-1.5 h-1.5 rounded-full bg-accent" />{entry.dinner}</div>}
+                                                        {entry.breakfast && <div className="flex items-center gap-2 text-brand text-brand"><div className="w-1.5 h-1.5 rounded-full bg-accent" />{entry.breakfast}</div>}
+                                                        {entry.lunch && <div className="flex items-center gap-2 text-brand text-brand"><div className="w-1.5 h-1.5 rounded-full bg-accent" />{entry.lunch}</div>}
+                                                        {entry.dinner && <div className="flex items-center gap-2 text-brand text-brand"><div className="w-1.5 h-1.5 rounded-full bg-accent" />{entry.dinner}</div>}
                                                     </div>
                                                 </div>
                                             )}
@@ -476,22 +474,22 @@
                                                 <div className="px-5 pt-5 pb-3 flex justify-between items-start relative">
                                                     <div className="flex items-center gap-2 pr-16 text-brand">
                                                         <h3 className="text-[16px] font-bold leading-tight truncate">{p.title}</h3>
-                                                        {activePlanId === p.id && <span className="bg-accent text-white text-[10px] font-bold px-2 py-0.5 rounded-full uppercase">執行中</span>}
+                                                        {activePlanId === p.id && <span className="bg-accent text-white text-[10px] font-bold px-2 py-0.5 rounded-full uppercase whitespace-nowrap">執行中</span>}
                                                     </div>
                                                     <div className="absolute top-4 right-4 flex gap-1">
-                                                        <button onClick={(e) => { e.stopPropagation(); handleEditPlan(p); }} className="p-2 text-primary opacity-40 hover:opacity-100 active:scale-90 transition-all text-brand"><Icon name="edit-3" size={18}/></button>
-                                                        <button onClick={async (e) => { e.stopPropagation(); if(confirm('確定要刪除計畫嗎？')) await deleteDoc(doc(db, 'artifacts', currentAppId, 'users', user.uid, 'plans', p.id)); }} className="p-2 text-primary opacity-40 hover:opacity-100 hover:text-red-500 active:scale-90 transition-all text-brand"><Icon name="trash-2" size={18}/></button>
+                                                        <button onClick={(e) => { e.stopPropagation(); handleEditPlan(p); }} className="p-2 text-primary opacity-40 hover:opacity-100 active:scale-90 transition-all text-brand text-brand"><Icon name="edit-3" size={18}/></button>
+                                                        <button onClick={async (e) => { e.stopPropagation(); if(confirm('確定要刪除計畫嗎？')) await deleteDoc(doc(db, 'artifacts', currentAppId, 'users', user.uid, 'plans', p.id)); }} className="p-2 text-primary opacity-40 hover:opacity-100 hover:text-red-500 active:scale-90 transition-all text-brand text-brand text-brand"><Icon name="trash-2" size={18}/></button>
                                                     </div>
                                                 </div>
-                                                <div className="px-5 pb-5 space-y-4 text-brand">
+                                                <div className="px-5 pb-5 space-y-4 text-brand text-brand">
                                                     <div className="bg-secondary/40 rounded-xl p-3 grid grid-cols-2 gap-2 border border-primary/10">
-                                                        <div className="flex flex-col gap-1 border-r border-primary/10 text-brand">
+                                                        <div className="flex flex-col gap-1 border-r border-primary/10">
                                                             <span className="text-[10px] font-bold text-primary uppercase text-brand">目標體重</span>
-                                                            <div className="flex items-center gap-1.5"><Icon name="target" size={14} className="text-accent" /><span className="text-[15px] font-bold">{p.targetWeight} <span className="text-[10px] opacity-60">KG</span></span></div>
+                                                            <div className="flex items-center gap-1.5"><Icon name="target" size={14} className="text-accent" /><span className="text-[15px] font-bold text-brand text-brand">{p.targetWeight} <span className="text-[10px] opacity-60">KG</span></span></div>
                                                         </div>
                                                         <div className="flex flex-col gap-1 pl-2">
                                                             <span className="text-[10px] font-bold text-primary uppercase">截止日期</span>
-                                                            <div className="flex items-center gap-1.5"><Icon name="calendar" size={14} className="text-primary" /><span className="text-[15px] font-bold">{p.targetDate.split('-').slice(1).join('/')}</span></div>
+                                                            <div className="flex items-center gap-1.5 text-brand text-brand"><Icon name="calendar" size={14} className="text-primary" /><span className="text-[15px] font-bold text-brand text-brand">{p.targetDate.split('-').slice(1).join('/')}</span></div>
                                                         </div>
                                                     </div>
                                                     {activePlanId !== p.id && (<button onClick={() => {setActivePlanId(p.id); setView('home');}} className="w-full h-11 bg-brand text-white rounded-kxl text-[14px] font-bold active:scale-95 transition-all shadow-md mt-2">啟動計畫</button>)}
@@ -504,8 +502,7 @@
                         )}
                     </main>
 
-                    {/* Toolbar */}
-                    <nav className="absolute bottom-[16px] left-[16px] right-[16px] h-[72px] glass rounded-[24px] shadow-2xl border border-primary/10 flex justify-around items-center px-4 z-40 text-brand text-brand">
+                    <nav className="absolute bottom-[16px] left-[16px] right-[16px] h-[72px] glass rounded-[24px] shadow-2xl border border-primary/10 flex justify-around items-center px-4 z-40 text-brand">
                         <button onClick={() => setView('home')} className={`flex-1 flex flex-col items-center gap-1 transition-all ${view === 'home' ? 'text-accent' : 'text-brand/70 active:scale-90'}`}>
                             <Icon name="home" size={22} fill={view === 'home' ? 'currentColor' : 'none'} /><span className="text-[12px] font-bold">首頁</span>
                         </button>
@@ -530,7 +527,7 @@
                         <div className="absolute inset-0 z-[110] flex items-end animate-in fade-in duration-300">
                             <div className="absolute inset-0 bg-brand/40 backdrop-blur-sm" onClick={closeModal} />
                             <div className="w-full bg-[#fbfbfe] rounded-t-[32px] h-[92vh] z-10 flex flex-col animate-in slide-in-from-bottom-full duration-500 shadow-2xl border-t border-primary/20 overflow-hidden text-brand">
-                                <header className="px-6 py-4 border-b border-primary/5 flex justify-between items-center bg-white sticky top-0 z-20 shadow-sm">
+                                <header className="px-6 py-4 border-b border-primary/5 flex justify-between items-center bg-white sticky top-0 z-20 shadow-sm text-brand">
                                     <div className="w-10" />
                                     <div className="flex bg-secondary p-1 rounded-kxl border border-primary/10">
                                         <button onClick={() => setEntryType('workout')} className={`px-8 py-1.5 rounded-lg text-[14px] font-bold transition-all ${entryType === 'workout' ? 'bg-white shadow-sm' : 'text-primary'}`}>運動</button>
@@ -539,78 +536,78 @@
                                     <button onClick={closeModal} className="p-2 active:scale-90 text-primary transition-transform"><Icon name="x" size={24} /></button>
                                 </header>
                                 <div className="flex-1 overflow-y-auto px-page py-6 space-y-4 no-scrollbar">
-                                    <div className="space-y-2">
+                                    <div className="space-y-2 text-brand">
                                         <p className="text-[16px] font-bold uppercase tracking-widest ml-1 text-brand">
                                             {entryType === 'workout' ? '訓練日期' : '飲食日期'}
                                         </p>
-                                        <div className="date-input-container bg-white border border-primary/30 h-11 rounded-kxl px-4 flex items-center focus-within:border-brand transition-all">
+                                        <div className="date-input-container bg-white border border-primary/30 h-11 rounded-kxl px-4 flex items-center focus-within:border-brand transition-all text-brand">
                                             <input type="date" value={entryType === 'workout' ? w_date : d_date} onChange={e => entryType === 'workout' ? setWDate(e.target.value) : setDDate(e.target.value)} className="w-full bg-transparent font-bold text-[14px] outline-none text-accent relative z-10" />
-                                            <div className="absolute right-4 text-accent pointer-events-none opacity-60"><Icon name="calendar" size={18} /></div>
+                                            <div className="absolute right-4 text-accent pointer-events-none opacity-60 text-brand text-brand"><Icon name="calendar" size={18} /></div>
                                         </div>
                                     </div>
                                     {entryType === 'workout' ? (
                                         <>
                                             <div className="space-y-2 text-brand">
                                                 <p className="text-[16px] font-bold uppercase tracking-widest ml-1 text-brand">當前體重</p>
-                                                <div className="bg-white border border-primary/30 h-11 rounded-kxl px-4 flex items-center focus-within:border-brand transition-all">
-                                                    <input type="number" step="0.1" value={w_weight} onChange={e => setWWeight(e.target.value)} className="w-full bg-transparent font-bold text-[14px] outline-none text-brand" />
-                                                    <span className="text-[12px] font-bold text-primary ml-2 uppercase tracking-widest text-brand">KG</span>
+                                                <div className="bg-white border border-primary/30 h-11 rounded-kxl px-4 flex items-center focus-within:border-brand transition-all text-brand text-brand">
+                                                    <input type="number" step="0.1" value={w_weight} onChange={e => setWWeight(e.target.value)} className="w-full bg-transparent font-bold text-[14px] outline-none text-brand text-brand" />
+                                                    <span className="text-[12px] font-bold text-primary ml-2 uppercase tracking-widest text-brand text-brand">KG</span>
                                                 </div>
                                             </div>
-                                            <div className="space-y-2 text-brand">
-                                                <p className="text-[16px] font-bold uppercase tracking-widest ml-1 text-brand">訓練部位</p>
-                                                <div className="flex gap-2 flex-wrap">{BODY_PARTS.map(p => <button key={p} onClick={() => setWParts(v => v.includes(p) ? v.filter(i=>i!==p) : [...v,p])} className={`px-5 py-2.5 h-11 rounded-kxl text-[14px] font-bold border transition-all ${w_parts.includes(p) ? 'bg-brand text-white border-brand' : 'bg-white text-primary border-primary/30'}`}>{p}</button>)}</div>
+                                            <div className="space-y-2 text-brand text-brand">
+                                                <p className="text-[16px] font-bold uppercase tracking-widest ml-1 text-brand text-brand">訓練部位</p>
+                                                <div className="flex gap-2 flex-wrap text-brand text-brand">{BODY_PARTS.map(p => <button key={p} onClick={() => setWParts(v => v.includes(p) ? v.filter(i=>i!==p) : [...v,p])} className={`px-5 py-2.5 h-11 rounded-kxl text-[14px] font-bold border transition-all text-brand text-brand ${w_parts.includes(p) ? 'bg-brand text-white border-brand' : 'bg-white text-primary border-primary/30'}`}>{p}</button>)}</div>
                                             </div>
-                                            <div className="space-y-2 text-brand">
-                                                <p className="text-[16px] font-bold uppercase tracking-widest ml-1 text-brand">動作庫</p>
-                                                <div className="bg-white border border-primary/30 rounded-kxl p-4 space-y-4">
-                                                    <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1 text-brand">
-                                                        {Object.keys(EXERCISE_LIBRARY).map(t => <button key={t} onClick={() => setWApparatus(t)} className={`px-4 py-2 h-11 rounded-kxl text-[14px] font-bold whitespace-nowrap border transition-all ${w_apparatus === t ? 'bg-brand text-white' : 'bg-white text-primary border-primary/30'}`}>{t}</button>)}
+                                            <div className="space-y-2 text-brand text-brand">
+                                                <p className="text-[16px] font-bold uppercase tracking-widest ml-1 text-brand text-brand">動作庫</p>
+                                                <div className="bg-white border border-primary/30 rounded-kxl p-4 space-y-4 text-brand text-brand">
+                                                    <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1 text-brand text-brand">
+                                                        {Object.keys(EXERCISE_LIBRARY).map(t => <button key={t} onClick={() => setWApparatus(t)} className={`px-4 py-2 h-11 rounded-kxl text-[14px] font-bold whitespace-nowrap border transition-all text-brand text-brand ${w_apparatus === t ? 'bg-brand text-white' : 'bg-white text-primary border-primary/30'}`}>{t}</button>)}
                                                     </div>
-                                                    <div className="grid grid-cols-1 gap-2 text-brand">{(EXERCISE_LIBRARY[w_apparatus] || []).map(ex => {
+                                                    <div className="grid grid-cols-1 gap-2 text-brand text-brand">{(EXERCISE_LIBRARY[w_apparatus] || []).map(ex => {
                                                         const idx = w_exercises.findIndex(i => i.name === ex.name && i.category === w_apparatus);
                                                         const active = idx !== -1;
                                                         return (
-                                                            <div key={ex.name} className={`flex flex-col rounded-kxl border transition-all ${active ? 'border-accent bg-white' : 'border-primary/20 bg-white'}`}>
-                                                                <div className="flex items-center justify-between p-3 text-brand">
-                                                                    <button onClick={() => active ? setWExercises(prev => prev.filter(i => !(i.name === ex.name && i.category === w_apparatus))) : setWExercises([...w_exercises, { name: ex.name, sets: '', category: w_apparatus }])} className="flex-1 flex items-center gap-3 text-left">
-                                                                        <div className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all ${active ? 'bg-accent text-white' : 'bg-secondary text-primary'}`}>{active ? <Icon name="check" size={16}/> : <Icon name="plus" size={16}/>}</div>
-                                                                        <span className="font-bold text-[14px] text-brand">{ex.name}</span>
+                                                            <div key={ex.name} className={`flex flex-col rounded-kxl border transition-all text-brand text-brand ${active ? 'border-accent bg-white' : 'border-primary/20 bg-white'}`}>
+                                                                <div className="flex items-center justify-between p-3 text-brand text-brand">
+                                                                    <button onClick={() => active ? setWExercises(prev => prev.filter(i => !(i.name === ex.name && i.category === w_apparatus))) : setWExercises([...w_exercises, { name: ex.name, sets: '', category: w_apparatus }])} className="flex-1 flex items-center gap-3 text-left text-brand text-brand">
+                                                                        <div className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all text-brand text-brand ${active ? 'bg-accent text-white' : 'bg-secondary text-primary'}`}>{active ? <Icon name="check" size={16}/> : <Icon name="plus" size={16}/>}</div>
+                                                                        <span className="font-bold text-[14px] text-brand text-brand">{ex.name}</span>
                                                                     </button>
-                                                                    <a href={`https://www.youtube.com/results?search_query=皮拉提斯+${ex.name}`} target="_blank" className="p-2 text-red-500 active:scale-90 transition-transform"><Icon name="youtube" size={18}/></a>
+                                                                    <a href={`https://www.youtube.com/results?search_query=皮拉提斯+${ex.name}`} target="_blank" className="p-2 text-red-500 active:scale-90 transition-transform text-brand text-brand"><Icon name="youtube" size={18}/></a>
                                                                 </div>
-                                                                {active && <div className="px-3 pb-3 animate-in fade-in slide-in-from-top-1"><input value={w_exercises[idx].sets} onChange={e => { const val = e.target.value; setWExercises(prev => prev.map(i => (i.name === ex.name && i.category === w_apparatus) ? { ...i, sets: val } : i)); }} placeholder="例如: 15x3" className="w-full bg-white border border-primary/30 rounded-kxl px-4 h-11 text-[14px] outline-none" /></div>}
+                                                                {active && <div className="px-3 pb-3 animate-in fade-in slide-in-from-top-1 text-brand text-brand"><input value={w_exercises[idx].sets} onChange={e => { const val = e.target.value; setWExercises(prev => prev.map(i => (i.name === ex.name && i.category === w_apparatus) ? { ...i, sets: val } : i)); }} placeholder="例如: 15x3" className="w-full bg-white border border-primary/30 rounded-kxl px-4 h-11 text-[14px] outline-none text-brand text-brand" /></div>}
                                                             </div>
                                                         )
                                                     })}</div>
                                                 </div>
                                             </div>
-                                            <div className="space-y-2 text-brand">
-                                                <p className="text-[16px] font-bold uppercase tracking-widest ml-1 text-brand">訓練筆記</p>
-                                                <textarea value={w_note} onChange={e=>setWNote(e.target.value)} placeholder="分享訓練心得..." className="w-full h-32 bg-white border border-primary/30 rounded-kxl p-4 text-[14px] outline-none resize-none focus:border-brand transition-all" />
+                                            <div className="space-y-2 text-brand text-brand">
+                                                <p className="text-[16px] font-bold uppercase tracking-widest ml-1 text-brand text-brand">訓練筆記</p>
+                                                <textarea value={w_note} onChange={e=>setWNote(e.target.value)} placeholder="分享訓練心得..." className="w-full h-32 bg-white border border-primary/30 rounded-kxl p-4 text-[14px] outline-none resize-none focus:border-brand transition-all text-brand text-brand" />
                                             </div>
                                         </>
                                     ) : (
                                         <>
-                                            <div className="space-y-2 text-brand"><p className="text-[16px] font-bold uppercase tracking-widest ml-1">每日飲水</p><div className="bg-white border border-primary/30 rounded-kxl p-4 flex items-center justify-between shadow-none text-brand"><div className="flex items-center gap-4 text-brand"><Icon name="droplets" size={24} className="text-accent text-brand" /><div className="flex items-center text-brand text-brand"><input type="number" inputMode="numeric" pattern="[0-9]*" value={d_water} onChange={e => setDWater(e.target.value)} className="w-20 bg-transparent text-[24px] font-bold outline-none h-11 text-brand" /><span className="text-[14px] font-bold text-primary ml-1">cc</span></div></div><div className="flex gap-2 text-brand"><button onClick={() => setDWater(v=>Math.max(0,v-250))} className="w-12 h-11 bg-secondary rounded-full flex items-center justify-center text-primary active:scale-90 text-brand">-</button><button onClick={() => setDWater(v=>Number(v)+250)} className="w-12 h-12 bg-accent text-white rounded-full flex items-center justify-center active:scale-90 shadow-md shadow-orange-100 text-brand text-brand">+</button></div></div></div>
-                                            <div className="space-y-4 pt-2">{[{id:'breakfast',label:'早餐'}, {id:'lunch',label:'午餐'}, {id:'dinner',label:'晚餐'}, {id:'snacks',label:'點心/其他'}].map(m => {
+                                            <div className="space-y-2 text-brand text-brand text-brand text-brand"><p className="text-[16px] font-bold uppercase tracking-widest ml-1 text-brand text-brand text-brand text-brand">每日飲水</p><div className="bg-white border border-primary/30 rounded-kxl p-4 flex items-center justify-between shadow-none text-brand text-brand text-brand text-brand"><div className="flex items-center gap-4 text-brand text-brand text-brand text-brand"><Icon name="droplets" size={24} className="text-accent text-brand text-brand text-brand text-brand" /><div className="flex items-center text-brand text-brand text-brand text-brand"><input type="number" inputMode="numeric" pattern="[0-9]*" value={d_water} onChange={e => setDWater(e.target.value)} className="w-20 bg-transparent text-[24px] font-bold outline-none h-11 text-brand text-brand text-brand text-brand" /><span className="text-[14px] font-bold text-primary ml-1 text-brand text-brand text-brand text-brand">cc</span></div></div><div className="flex gap-2 text-brand text-brand text-brand text-brand text-brand"><button onClick={() => setDWater(v=>Math.max(0,v-250))} className="w-12 h-11 bg-secondary rounded-full flex items-center justify-center text-primary active:scale-90 text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand">-</button><button onClick={() => setDWater(v=>Number(v)+250)} className="w-12 h-12 bg-accent text-white rounded-full flex items-center justify-center active:scale-90 shadow-md shadow-orange-100 text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand">+</button></div></div></div>
+                                            <div className="space-y-4 pt-2 text-brand text-brand text-brand text-brand text-brand">{[{id:'breakfast',label:'早餐'}, {id:'lunch',label:'午餐'}, {id:'dinner',label:'晚餐'}, {id:'snacks',label:'點心/其他'}].map(m => {
                                                 const val = m.id==='breakfast'?d_breakfast : m.id==='lunch'?d_lunch : m.id==='dinner'?d_dinner : d_snacks;
                                                 const set = m.id==='breakfast'?setDBreakfast : m.id==='lunch'?setDLunch : m.id==='dinner'?setDDinner : setDSnacks;
                                                 return (
-                                                    <div key={m.id} className="space-y-2 text-brand">
-                                                        <p className="text-[16px] font-bold uppercase tracking-widest ml-1">{m.label}</p>
-                                                        <div className="bg-white border border-primary/30 rounded-kxl p-4 space-y-3">
-                                                            <textarea value={val} onChange={e=>set(e.target.value)} placeholder="手寫輸入飲食..." className="w-full bg-transparent text-[14px] outline-none min-h-[60px] resize-none text-brand" />
+                                                    <div key={m.id} className="space-y-2 text-brand text-brand text-brand text-brand text-brand">
+                                                        <p className="text-[16px] font-bold uppercase tracking-widest ml-1 text-brand text-brand text-brand text-brand text-brand">{m.label}</p>
+                                                        <div className="bg-white border border-primary/30 rounded-kxl p-4 space-y-3 text-brand text-brand text-brand text-brand text-brand">
+                                                            <textarea value={val} onChange={e=>set(e.target.value)} placeholder="手寫輸入飲食..." className="w-full bg-transparent text-[14px] outline-none min-h-[60px] resize-none text-brand text-brand text-brand text-brand text-brand" />
                                                         </div>
                                                     </div>
                                                 )
                                             })}</div>
-                                            <div className="space-y-2 text-brand"><p className="text-[16px] font-bold uppercase tracking-widest ml-1 text-brand">標籤</p><div className="flex gap-2 flex-wrap">{DIET_TAGS.map(t=><button key={t} onClick={()=>setDTags(v=>v.includes(t)?v.filter(i=>i!==t):[...v,t])} className={`px-5 py-2.5 h-11 rounded-kxl text-[12px] font-bold border transition-all ${d_tags.includes(t)?'bg-brand text-white border-brand text-brand':'bg-white text-primary border-primary/30 text-brand'}`}>{t}</button>)}</div></div>
+                                            <div className="space-y-2 text-brand text-brand text-brand text-brand text-brand"><p className="text-[16px] font-bold uppercase tracking-widest ml-1 text-brand text-brand text-brand text-brand text-brand">標籤</p><div className="flex gap-2 flex-wrap text-brand text-brand text-brand text-brand text-brand">{DIET_TAGS.map(t=><button key={t} onClick={()=>setDTags(v=>v.includes(t)?v.filter(i=>i!==t):[...v,t])} className={`px-5 py-2.5 h-11 rounded-kxl text-[12px] font-bold border transition-all text-brand text-brand text-brand text-brand text-brand ${d_tags.includes(t)?'bg-brand text-white border-brand' : 'bg-white text-primary border-primary/30'}`}>{t}</button>)}</div></div>
                                         </>
                                     )}
                                 </div>
-                                <div className="p-page glass border-t border-primary/10 z-30">
-                                    <button onClick={entryType==='workout'?handleSaveWorkout:handleSaveDiet} disabled={!activePlan || (entryType==='diet'?!isDietValid : !isWorkoutValid)} className={`w-full h-11 rounded-kxl text-white font-bold text-[16px] shadow-xl transition-all ${entryType === 'workout' ? 'bg-accent shadow-orange-100' : 'bg-brand shadow-gray-200'} active:scale-95 disabled:opacity-30`}>{editingId ? '確認並更新' : `儲存紀錄`}</button>
+                                <div className="p-page glass border-t border-primary/10 z-30 text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand">
+                                    <button onClick={entryType==='workout'?handleSaveWorkout:handleSaveDiet} disabled={!activePlan || (entryType==='diet'?!isDietValid : !isWorkoutValid)} className={`w-full h-11 rounded-kxl text-white font-bold text-[16px] shadow-xl transition-all ${entryType === 'workout' ? 'bg-accent shadow-orange-100' : 'bg-brand shadow-gray-200'} active:scale-95 disabled:opacity-30 text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand`}>{editingId ? '確認並更新' : `儲存紀錄`}</button>
                                 </div>
                             </div>
                         </div>
@@ -618,44 +615,44 @@
 
                     {/* New Plan Modal */}
                     {showPlanModal && (
-                        <div className="absolute inset-0 z-[110] flex items-end animate-in fade-in duration-300">
+                        <div className="absolute inset-0 z-[110] flex items-end animate-in fade-in duration-300 text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand">
                             <div className="absolute inset-0 bg-brand/40 backdrop-blur-sm" onClick={closeModal} />
-                            <div className="w-full bg-[#fbfbfe] rounded-t-[32px] h-[92vh] z-10 flex flex-col animate-in slide-in-from-bottom-full duration-500 shadow-2xl border-t border-primary/20 overflow-hidden text-brand">
-                                <header className="px-page h-12 border-b border-primary/5 flex justify-between items-center bg-white sticky top-0 z-20 shadow-sm">
+                            <div className="w-full bg-[#fbfbfe] rounded-t-[32px] h-[92vh] z-10 flex flex-col animate-in slide-in-from-bottom-full duration-500 shadow-2xl border-t border-primary/20 overflow-hidden text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand">
+                                <header className="px-page h-12 border-b border-primary/5 flex justify-between items-center bg-white sticky top-0 z-20 shadow-sm text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand">
                                     <div className="w-10" />
-                                    <h3 className="text-[18px] font-bold text-center leading-none">設定新衝刺目標</h3>
-                                    <button onClick={closeModal} className="p-2 active:scale-90 text-primary transition-transform"><Icon name="x" size={24} /></button>
+                                    <h3 className="text-[18px] font-bold text-center leading-none text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand">設定新衝刺目標</h3>
+                                    <button onClick={closeModal} className="p-2 active:scale-90 text-primary transition-transform text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand"><Icon name="x" size={24} /></button>
                                 </header>
-                                <div className="flex-1 overflow-y-auto px-page py-6 space-y-4 no-scrollbar">
-                                    <div className="space-y-2">
-                                        <div className="flex items-center gap-2 text-primary ml-1 text-brand"><Icon name="flag" size={16} className="text-accent" /><p className="text-[16px] font-bold uppercase tracking-widest">計畫標題</p></div>
-                                        <div className="bg-white border border-primary/30 rounded-kxl px-4 flex items-center h-11 focus-within:border-brand transition-all shadow-none"><input value={newPlanTitle} onChange={e=>setNewPlanTitle(e.target.value)} className="w-full bg-transparent text-[14px] font-bold outline-none placeholder:text-primary/40 h-full text-brand" placeholder="例如：韓國 14 天衝刺計畫" /></div>
+                                <div className="flex-1 overflow-y-auto px-page py-6 space-y-4 no-scrollbar text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand">
+                                    <div className="space-y-2 text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand">
+                                        <div className="flex items-center gap-2 text-primary ml-1 text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand"><Icon name="flag" size={16} className="text-accent text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand" /><p className="text-[16px] font-bold uppercase tracking-widest text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand">計畫標題</p></div>
+                                        <div className="bg-white border border-primary/30 rounded-kxl px-4 flex items-center h-11 focus-within:border-brand transition-all shadow-none text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand"><input value={newPlanTitle} onChange={e=>setNewPlanTitle(e.target.value)} className="w-full bg-transparent text-[14px] font-bold outline-none placeholder:text-primary/40 h-full text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand" placeholder="例如：韓國 14 天衝刺計畫" /></div>
                                     </div>
-                                    <div className="space-y-2 text-brand">
-                                        <div className="flex justify-between items-center pr-1 ml-1 text-brand text-brand">
-                                            <div className="flex items-center gap-2 text-primary text-brand"><Icon name="calendar" size={16} className="text-accent" /><p className="text-[16px] font-bold uppercase tracking-widest text-brand">截止日期</p></div>
-                                            <div className="flex gap-2">
+                                    <div className="space-y-2 text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand">
+                                        <div className="flex justify-between items-center pr-1 ml-1 text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand">
+                                            <div className="flex items-center gap-2 text-primary text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand"><Icon name="calendar" size={16} className="text-accent text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand" /><p className="text-[16px] font-bold uppercase tracking-widest text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand">截止日期</p></div>
+                                            <div className="flex gap-2 text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand">
                                                 {[7, 14, 30].map(d => (
-                                                    <button key={d} onClick={() => handleSetPresetDate(d)} className="px-3 py-1 bg-white border border-primary/30 text-primary rounded-full text-[12px] font-bold active:scale-95 transition-all text-brand">
+                                                    <button key={d} onClick={() => handleSetPresetDate(d)} className="px-3 py-1 bg-white border border-primary/30 text-primary rounded-full text-[12px] font-bold active:scale-95 transition-all text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand">
                                                         {d}天
                                                     </button>
                                                 ))}
                                             </div>
                                         </div>
-                                        <div className="date-input-container bg-white border border-primary/30 rounded-kxl px-4 flex items-center h-11 relative focus-within:border-brand transition-all shadow-none">
-                                            <input type="date" value={newPlanDate} onChange={e=>setNewPlanDate(e.target.value)} className="w-full bg-transparent font-bold text-accent outline-none h-full z-10 text-brand" />
-                                            <div className="absolute right-4 text-accent pointer-events-none opacity-60 text-brand text-brand"><Icon name="calendar" size={18} /></div>
+                                        <div className="date-input-container bg-white border border-primary/30 rounded-kxl px-4 flex items-center h-11 relative focus-within:border-brand transition-all shadow-none text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand">
+                                            <input type="date" value={newPlanDate} onChange={e=>setNewPlanDate(e.target.value)} className="w-full bg-transparent font-bold text-accent outline-none h-full z-10 text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand" />
+                                            <div className="absolute right-4 text-accent pointer-events-none opacity-60 text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand"><Icon name="calendar" size={18} /></div>
                                         </div>
                                     </div>
-                                    <div className="space-y-2 text-brand">
-                                        <div className="flex items-center gap-2 text-primary ml-1 text-brand text-brand"><Icon name="target" size={16} className="text-accent" /><p className="text-[16px] font-bold uppercase tracking-widest text-brand">目標體重</p></div>
-                                        <div className="bg-white border border-primary/30 rounded-kxl px-4 flex items-center h-11 focus-within:border-brand transition-all shadow-none">
-                                            <div className="flex items-center w-full justify-between text-brand text-brand"><input type="number" step="0.1" value={newPlanTargetWeight} onChange={e=>setNewPlanTargetWeight(e.target.value)} className="bg-transparent font-bold text-accent outline-none flex-1 h-full text-brand" placeholder="54.0" /><span className="text-[12px] font-bold text-primary ml-2 uppercase tracking-widest text-brand">KG</span></div>
+                                    <div className="space-y-2 text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand">
+                                        <div className="flex items-center gap-2 text-primary ml-1 text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand"><Icon name="target" size={16} className="text-accent text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand" /><p className="text-[16px] font-bold uppercase tracking-widest text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand">目標體重</p></div>
+                                        <div className="bg-white border border-primary/30 rounded-kxl px-4 flex items-center h-11 focus-within:border-brand transition-all shadow-none text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand">
+                                            <div className="flex items-center w-full justify-between text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand"><input type="number" step="0.1" value={newPlanTargetWeight} onChange={e=>setNewPlanTargetWeight(e.target.value)} className="bg-transparent font-bold text-accent outline-none flex-1 h-full text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand" placeholder="54.0" /><span className="text-[12px] font-bold text-primary ml-2 uppercase tracking-widest text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand">KG</span></div>
                                         </div>
                                     </div>
                                 </div>
-                                <div className="p-page glass border-t border-primary/10 z-30 shadow-md">
-                                    <button onClick={handleCreatePlan} disabled={!newPlanTitle || !newPlanDate || !newPlanTargetWeight} className="w-full h-11 rounded-kxl bg-accent text-white font-bold text-[16px] shadow-xl shadow-orange-100 active:scale-95 transition-all disabled:opacity-30 text-brand">{editingPlanId ? '確認並儲存修改' : '啟動新計畫'}</button>
+                                <div className="p-page glass border-t border-primary/10 z-30 shadow-md text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand">
+                                    <button onClick={handleCreatePlan} disabled={!newPlanTitle || !newPlanDate || !newPlanTargetWeight} className="w-full h-11 rounded-kxl bg-accent text-white font-bold text-[16px] shadow-xl shadow-orange-100 active:scale-95 transition-all disabled:opacity-30 text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand">啟動新計畫</button>
                                 </div>
                             </div>
                         </div>
