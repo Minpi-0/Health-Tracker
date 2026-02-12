@@ -20,9 +20,9 @@
         :root {
             --bg-color: #fbfbfe;
             --text-color: #34495e; 
-            --primary-color: #9caeba;
-            --secondary-color: #e9f1fb;
             --accent-color: #f9991a;
+            --input-bg: #f2f4f7;
+            --gray-border: #e5e7eb;
         }
 
         body {
@@ -34,7 +34,6 @@
             align-items: flex-start;
             min-height: 100vh;
             -webkit-tap-highlight-color: transparent;
-            color: var(--text-color);
         }
 
         #root {
@@ -53,21 +52,115 @@
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
         
-        input, textarea, button, select { 
-            font-size: 14px !important; 
-            box-shadow: none !important;
+        input, textarea, select { 
+            background-color: var(--input-bg) !important;
+            border: none !important;
+            border-radius: 12px !important;
+            padding: 12px 16px !important;
+            font-size: 14px !important;
             outline: none !important;
-            color: inherit;
+            color: var(--text-color) !important;
+            box-shadow: none !important;
+            transition: all 0.2s ease;
         }
         
+        input:focus, textarea:focus {
+            background-color: #ebedf0 !important;
+        }
+
+        .option-tag {
+            background-color: white;
+            border: 1px solid var(--gray-border) !important;
+            padding: 8px 16px;
+            border-radius: 10px;
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--text-color);
+            box-shadow: none !important;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.2s;
+            white-space: nowrap;
+        }
+
+        @keyframes bg-gradient-flow {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        @keyframes energy-wave {
+            0% { transform: translateY(0) rotate(0deg) scale(1); opacity: 0.3; }
+            50% { transform: translateY(-20px) rotate(5deg) scale(1.1); opacity: 0.5; }
+            100% { transform: translateY(0) rotate(0deg) scale(1); opacity: 0.3; }
+        }
+
+        .bg-dynamic-flow {
+            background: linear-gradient(135deg, #f9991a, #ffb347, #ff8c00, #f9991a);
+            background-size: 400% 400%;
+            animation: bg-gradient-flow 12s ease infinite;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .energy-stream {
+            position: absolute;
+            width: 150%;
+            height: 40%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            filter: blur(40px);
+            z-index: 1;
+            pointer-events: none;
+        }
+
+        .stream-1 { top: 10%; left: -25%; animation: energy-wave 8s infinite ease-in-out; }
+        .stream-2 { bottom: 15%; left: -10%; animation: energy-wave 10s infinite reverse ease-in-out; }
+
+        .timeline-line {
+            position: absolute;
+            left: 20px;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background-color: var(--accent-color);
+            opacity: 0.15;
+            z-index: 0;
+        }
+
+        @keyframes advanced-shine {
+            0% { left: -100%; }
+            25% { left: 100%; }
+            100% { left: 100%; }
+        }
+        
+        .premium-shine {
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .premium-shine::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 60%;
+            height: 100%;
+            background: linear-gradient(to right, transparent, rgba(255, 255, 255, 0.3), transparent);
+            transform: skewX(-25deg);
+            animation: advanced-shine 4s infinite ease-in-out;
+        }
+
         .animate-progress { transition: width 1.5s cubic-bezier(0.34, 1.56, 0.64, 1); }
-        .glass { background: rgba(255, 255, 255, 0.8); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); }
+        .glass { background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
 
         .date-input-container {
             position: relative;
             display: flex;
             align-items: center;
             width: 100%;
+            background-color: var(--input-bg);
+            border-radius: 12px;
         }
         
         .date-input-container input[type="date"]::-webkit-calendar-picker-indicator {
@@ -90,7 +183,8 @@
                         accent: '#f9991a',
                         secondary: '#e9f1fb',
                         brand: '#34495e',
-                        kbg: '#fbfbfe'
+                        kbg: '#fbfbfe',
+                        ingray: '#f2f4f7'
                     },
                     spacing: {
                         'page': '16px',
@@ -109,38 +203,39 @@
 <body>
     <div id="root"></div>
 
-    <!-- 填寫說明：部署到 Vercel 前，請務必將下方的 config 替換成妳自己的 Firebase 金鑰 -->
     <script type="text/babel" data-type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, setDoc, collection, onSnapshot, deleteDoc, query } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, doc, setDoc, getDoc, collection, onSnapshot, deleteDoc, query, updateDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         const { useState, useMemo, useEffect, useRef } = React;
 
-        // --- 重要：在此填入妳的 Firebase 設定 ---
-        const myFirebaseConfig = {
-            apiKey: "AIzaSyBpCw2-cfSDaE0ABznkvULKD9sxgjlR9OI", // 例如: "AIzaSy..."
-            authDomain: "health-tracker-ed193.firebaseapp.com",
-            projectId: "health-tracker-ed193",
-            storageBucket: "health-tracker-ed193.firebasestorage.app",
-            messagingSenderId: "77615585267",
-            appId: "1:77615585267:web:451f6672cc9834dc92a486"
+        // --- 全域常數 ---
+        const BODY_PARTS = ['核心', '上半身', '下半身', '全身流動'];
+        const DIET_TAGS = ['蛋白質足夠', '低醣飲食', '輕食無負擔', '獎勵餐'];
+        const DAILY_REINFORCEMENTS = [
+            { name: '死蟲式 (Dead Bug)', sets: '15x3', desc: '觀察到妳的核心覺醒程度還有進步空間，建議以此動作精準啟動深層腹肌，穩定骨盆。', challenge: { name: '進階死蟲式 (加重球)', sets: '12x4', desc: '妳剛才的核心穩定性非常好！挑戰加入 1kg 的負擔來增加深層肌耐力。' } },
+            { name: '貓牛式 (Cat-Cow)', sets: '10x2', desc: '考量到妳近期反應脊椎僵硬，此動作能幫助找回脊椎逐節的流動感，有效釋放日常壓力。', challenge: { name: '動態平衡貓牛式', sets: '8x3', desc: '脊椎已經熱開了！試著在延展時同時抬起對側手腳，幫助妳找回身體中心軸感。' } },
+            { name: '鳥狗式 (Bird-Dog)', sets: '12x3', desc: '觀察到妳在支撐時重心微晃，這代表交叉鏈穩定性需加強，這項練習能幫妳建立更穩固的平衡。', challenge: { name: '懸空鳥狗式 (膝蓋離地)', sets: '6x3', desc: '對側連結已經啟動！嘗試讓膝蓋微離地支撐，爆發性加強妳的核心厚度。' } },
+            { name: '臀橋 (Glute Bridge)', sets: '20x3', desc: '因為妳久坐時間較長，臀部力量喚醒較慢，此動作能幫妳建立臀肌支撐力，減少腰部負擔。', challenge: { name: '單腳臀橋 (Single Leg)', sets: '10x3', desc: '臀肌充血感已經出現！挑戰單腳支撐來平衡左右肌力，對妳的骨盆對線極有幫助。' } },
+            { name: '天鵝式 (Swan)', sets: '8x3', desc: '注意到妳在報告中提到圓肩現象，這項開展練習能幫助妳打開胸腔、強化上背體態。', challenge: { name: '天鵝式 2 型 (雙手離地)', sets: '10x2', desc: '胸腔已經打開了！嘗試在收縮時雙手也離開地面，針對妳容易疲勞的胸椎深度強化。' } }
+        ];
+        const EXERCISE_LIBRARY = {
+            '核心床 (Reformer)': [{ name: '足部練習', category: '核心床 (Reformer)' }, { name: '大象式', category: '核心床 (Reformer)' }, { name: '捲腹', category: '核心床 (Reformer)' }],
+            '凱迪拉克 (Cadillac)': [{ name: '逐節捲動', category: '凱迪拉克 (Cadillac)' }, { name: '胸口擴展', category: '凱迪拉克 (Cadillac)' }],
+            '穩踏椅 (Chair)': [{ name: '天鵝式', category: '穩踏椅 (Chair)' }, { name: '推地式', category: '穩踏椅 (Chair)' }],
+            '梯桶 (Barrel)': [{ name: '短箱系列', category: '梯桶 (Barrel)' }, { name: '側腹捲腹', category: '梯桶 (Barrel)' }],
+            '墊上 (Mat)': [{ name: '百次呼吸', category: '墊上 (Mat)' }, { name: '死蟲式', category: '墊上 (Mat)' }]
+        };
+        const DEFAULT_QUICK_FOODS = {
+            breakfast: ["無糖豆漿", "水煮蛋", "地瓜", "黑咖啡"],
+            lunch: ["雞胸肉", "糙米飯", "燙青菜", "健康餐盒"],
+            dinner: ["清蒸魚", "豆腐", "大拌菜", "輕食沙拉"],
+            snacks: ["綜合堅果", "希臘優格", "藍莓", "高蛋白飲"]
         };
 
-        // 偵測環境：如果是 Canvas 則使用注入的變數，如果是 Vercel 則使用手填的 config
-        const firebaseConfig = (typeof __firebase_config !== 'undefined' && __firebase_config) 
-            ? JSON.parse(__firebase_config) 
-            : myFirebaseConfig;
-
-        // 檢查是否已填寫金鑰，避免白屏崩潰
-        const isConfigReady = firebaseConfig && firebaseConfig.apiKey !== "";
-
-        const app = isConfigReady ? initializeApp(firebaseConfig) : null;
-        const auth = app ? getAuth(app) : null;
-        const db = app ? getFirestore(app) : null;
-        const currentAppId = typeof __app_id !== 'undefined' ? __app_id : 'k-glow-tracker-vercel';
-
-        const Icon = ({ name, size = 24, className = "", fill = "none" }) => {
+        // --- 核心圖示組件 (提升為 Function 以便 Hoisting) ---
+        function Icon({ name, size = 24, className = "", fill = "none" }) {
             const wrapperRef = useRef(null);
             useEffect(() => {
                 if (window.lucide && wrapperRef.current) {
@@ -151,27 +246,8 @@
                     });
                 }
             }, [name, size, className, fill]);
-            return <span ref={wrapperRef} className="inline-flex items-center justify-center shrink-0" style={{ width: size, height: size }} />;
-        };
-
-        const DAILY_REINFORCEMENTS = [
-            { name: '死蟲式 (Dead Bug)', desc: '根據報告顯示妳的深層核心支撐力尚有進步空間，這項練習能幫助妳在穩定骨盆的同時強化腹內斜肌，改善日常站姿的代償。' },
-            { name: '貓牛式 (Cat-Cow)', desc: '考量到妳近期反應背部緊繃感較明顯，建議透過脊椎的逐節律動，幫助妳找回脊椎受力平衡，有效減緩久坐帶來的不適。' },
-            { name: '鳥狗式 (Bird-Dog)', desc: '根據動作評估發現妳的交叉鏈穩定性需要加強，這項練習能幫助妳在動態中維持軀幹穩定，讓妳的皮拉提斯動作更精準到位。' },
-            { name: '臀橋 (Glute Bridge)', desc: '觀察到妳在走動時大腿前側參與過多，透過啟動臀大肌，能幫助妳平衡下半身肌群受力，同時給予下背部更穩固的支撐。' },
-            { name: '天鵝式 (Swan)', desc: '注意到妳在報告中提到的圓肩困擾，這項開展動作能幫助妳強化上背肌群並打開胸椎空間，讓妳的體態看起來更優雅修長。' },
-            { name: '側板式 (Side Plank)', desc: '考量到側彎對線的對稱性需求，這項練習能針對妳較弱的一側進行側向支撐強化，幫助妳找回身體中心線的平衡。' },
-            { name: '孩童式 (Child\'s Pose)', desc: '感覺到妳今天的生理與心理壓力較大，最後這項呼吸引導能幫助妳放鬆副交感神經，為今天的努力畫下最完美的句點。' }
-        ];
-
-        const BODY_PARTS = ['核心', '上半身', '下半身', '全身流動'];
-        const DIET_TAGS = ['蛋白質足夠', '低醣飲食', '輕食無負擔', '獎勵餐'];
-        const EXERCISE_LIBRARY = {
-            '核心床 (Reformer)': [{ name: '足部練習', category: '核心床 (Reformer)' }, { name: '大象式', category: '核心床 (Reformer)' }, { name: '捲腹', category: '核心床 (Reformer)' }],
-            '凱迪拉克 (Cadillac)': [{ name: '逐節捲動', category: '凱迪拉克 (Cadillac)' }, { name: '胸口擴展', category: '凱迪拉克 (Cadillac)' }],
-            '穩踏椅 (Chair)': [{ name: '天鵝式', category: '穩踏椅 (Chair)' }, { name: '推地式', category: '穩踏椅 (Chair)' }],
-            '墊上 (Mat)': [{ name: '百次呼吸', category: '墊上 (Mat)' }, { name: '死蟲式', category: '墊上 (Mat)' }]
-        };
+            return <span ref={wrapperRef} className={`inline-flex items-center justify-center shrink-0 ${className}`} style={{ width: size, height: size }} />;
+        }
 
         const App = () => {
             const [user, setUser] = useState(null);
@@ -182,18 +258,27 @@
             const [entryType, setEntryType] = useState('workout');
             const [showCelebration, setShowCelebration] = useState(false);
             const [editingId, setEditingId] = useState(null);
-            const [editingPlanId, setEditingPlanId] = useState(null);
+            const [confirmDelete, setConfirmDelete] = useState(null); 
 
             const [plans, setPlans] = useState([]);
             const [activePlanId, setActivePlanId] = useState(null);
+            const [commonFoods, setCommonFoods] = useState(DEFAULT_QUICK_FOODS);
+            
+            const [inlineAddingMeal, setInlineAddingMeal] = useState(null);
+            const [newLabelText, setNewLabelText] = useState("");
+            const [historyFilterDate, setHistoryFilterDate] = useState("");
 
+            const [customSets, setCustomSets] = useState("");
+            const [isReinforcementDoneToday, setIsReinforcementDoneToday] = useState(false);
+            const [isExtraChallengeMode, setIsExtraChallengeMode] = useState(false);
+
+            // 表單狀態
             const [w_note, setWNote] = useState('');
             const [w_parts, setWParts] = useState([]);
             const [w_apparatus, setWApparatus] = useState('核心床 (Reformer)');
             const [w_exercises, setWExercises] = useState([]);
             const [w_weight, setWWeight] = useState('57.1');
             const [w_date, setWDate] = useState(new Date().toISOString().split('T')[0]);
-
             const [d_breakfast, setDBreakfast] = useState('');
             const [d_lunch, setDLunch] = useState('');
             const [d_dinner, setDDinner] = useState('');
@@ -209,450 +294,350 @@
             const activePlan = useMemo(() => plans.find(p => p.id === activePlanId) || null, [plans, activePlanId]);
             const latestWeight = useMemo(() => activePlan?.workoutEntries?.[0]?.weight || activePlan?.baselineWeight || 57.1, [activePlan]);
             const daysLeft = useMemo(() => activePlan ? Math.ceil((new Date(activePlan.targetDate) - new Date()) / (1000 * 60 * 60 * 24)) : 0, [activePlan]);
-            const todayReinforcement = useMemo(() => DAILY_REINFORCEMENTS[new Date().getDate() % DAILY_REINFORCEMENTS.length], []);
+            
+            const todayReinforcement = useMemo(() => {
+                const item = DAILY_REINFORCEMENTS[new Date().getDate() % DAILY_REINFORCEMENTS.length];
+                return isExtraChallengeMode ? item.challenge : item;
+            }, [isExtraChallengeMode]);
 
-            const isDietValid = useMemo(() => activePlan && Number(d_water) > 0 && (d_breakfast.trim() || d_lunch.trim() || d_dinner.trim() || d_snacks.trim()), [d_water, d_breakfast, d_lunch, d_dinner, d_snacks, activePlan]);
+            const isDietValid = useMemo(() => activePlan && (Number(d_water) >= 0) && (d_breakfast.trim() || d_lunch.trim() || d_dinner.trim() || d_snacks.trim()), [d_water, d_breakfast, d_lunch, d_dinner, d_snacks, activePlan]);
             const isWorkoutValid = useMemo(() => activePlan && (w_parts.length > 0 || w_exercises.length > 0), [w_parts, w_exercises, activePlan]);
 
-            useEffect(() => {
-                if (!isConfigReady) {
-                    setLoading(false);
-                    return;
-                }
-                const initAuth = async () => {
-                    if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) await signInWithCustomToken(auth, __initial_auth_token);
-                    else await signInAnonymously(auth);
-                };
-                initAuth();
-                const unsubscribe = onAuthStateChanged(auth, setUser);
-                return () => unsubscribe();
-            }, []);
-
-            useEffect(() => {
-                if (!user || !db) return;
-                const plansRef = collection(db, 'artifacts', currentAppId, 'users', user.uid, 'plans');
-                const unsubPlans = onSnapshot(plansRef, (snap) => {
-                    const list = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-                    setPlans(list.sort((a,b) => new Date(b.targetDate) - new Date(a.targetDate)));
-                    setLoading(false);
-                }, (err) => { console.error(err); setLoading(false); });
-                return () => unsubPlans();
-            }, [user, activePlanId]);
-
+            // --- 儲存與邏輯 ---
             const savePlanToCloud = async (updated) => {
                 if (!user || !updated.id) return;
                 await setDoc(doc(db, 'artifacts', currentAppId, 'users', user.uid, 'plans', updated.id), updated);
             };
 
-            const closeModal = () => {
-                setShowEntryModal(false); setShowPlanModal(false); setEditingId(null); setEditingPlanId(null);
-                setWNote(''); setWParts([]); setWExercises([]); setDBreakfast(''); setDLunch(''); setDDinner(''); setDSnacks(''); setDWater(2000); setDTags([]);
-                setNewPlanTitle(''); setNewPlanDate(''); setNewPlanTargetWeight('');
+            const handleSaveDiet = async () => {
+                if (!activePlan) return;
+                const now = new Date();
+                const entry = {
+                    id: editingId || Date.now(), 
+                    date: d_date, 
+                    time: now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                    displayDate: `${parseInt(d_date.split('-')[1])}月${parseInt(d_date.split('-')[2])}日`,
+                    breakfast: d_breakfast, lunch: d_lunch, dinner: d_dinner, snacks: d_snacks, water: Number(d_water), tags: d_tags
+                };
+                const updatedList = editingId 
+                    ? (activePlan.dietEntries || []).map(e => e.id === editingId ? entry : e)
+                    : [entry, ...(activePlan.dietEntries || [])];
+                await savePlanToCloud({ ...activePlan, dietEntries: updatedList.sort((a,b) => new Date(b.date) - new Date(a.date)) });
+                closeModal(); setShowCelebration(true); setTimeout(() => setShowCelebration(false), 3000);
             };
 
             const handleSaveWorkout = async () => {
                 if (!activePlan) return;
+                const now = new Date();
                 const entry = {
-                    id: editingId || Date.now(), date: w_date, displayDate: `${parseInt(w_date.split('-')[1])}月${parseInt(w_date.split('-')[2])}日`,
+                    id: editingId || Date.now(), 
+                    date: w_date, 
+                    time: now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                    displayDate: `${parseInt(w_date.split('-')[1])}月${parseInt(w_date.split('-')[2])}日`,
                     note: w_note, bodyParts: w_parts, apparatus: Array.from(new Set(w_exercises.map(ex => ex.category))), exercises: w_exercises, weight: parseFloat(w_weight)
                 };
-                const list = editingId ? activePlan.workoutEntries.map(e => e.id === editingId ? entry : e) : [entry, ...(activePlan.workoutEntries || [])];
-                await savePlanToCloud({ ...activePlan, workoutEntries: list.sort((a,b) => new Date(b.date) - new Date(a.date)) });
-                closeModal(); setShowCelebration(true); setTimeout(() => setShowCelebration(false), 3000);
-            };
-
-            const handleSaveDiet = async () => {
-                if (!activePlan) return;
-                const entry = {
-                    id: editingId || Date.now(), date: d_date, displayDate: `${parseInt(d_date.split('-')[1])}月${parseInt(d_date.split('-')[2])}日`,
-                    breakfast: d_breakfast, lunch: d_lunch, dinner: d_dinner, snacks: d_snacks, water: Number(d_water), tags: d_tags
-                };
-                const list = editingId ? activePlan.dietEntries.map(e => e.id === editingId ? entry : e) : [entry, ...(activePlan.dietEntries || [])];
-                await savePlanToCloud({ ...activePlan, dietEntries: list.sort((a,b) => new Date(b.date) - new Date(a.date)) });
+                const updatedList = editingId 
+                    ? (activePlan.workoutEntries || []).map(e => e.id === editingId ? entry : e)
+                    : [entry, ...(activePlan.workoutEntries || [])];
+                await savePlanToCloud({ ...activePlan, workoutEntries: updatedList.sort((a,b) => new Date(b.date) - new Date(a.date)) });
                 closeModal(); setShowCelebration(true); setTimeout(() => setShowCelebration(false), 3000);
             };
 
             const handleCreatePlan = async () => {
                 if (!newPlanTitle || !newPlanDate) return;
-                const newId = editingPlanId || `p-${Date.now()}`;
-                const targetPlan = editingPlanId ? plans.find(p => p.id === editingPlanId) : null;
-                const updatedPlan = {
-                    id: newId, title: newPlanTitle, targetDate: newPlanDate,
-                    targetWeight: parseFloat(newPlanTargetWeight) || 0,
-                    baselineWeight: targetPlan ? targetPlan.baselineWeight : parseFloat(latestWeight),
-                    workoutEntries: targetPlan ? targetPlan.workoutEntries : [],
-                    dietEntries: targetPlan ? targetPlan.dietEntries : []
-                };
-                await savePlanToCloud(updatedPlan);
-                if (!editingPlanId) setActivePlanId(newId);
+                const newId = `p-${Date.now()}`;
+                await savePlanToCloud({ id: newId, title: newPlanTitle, targetDate: newPlanDate, targetWeight: parseFloat(newPlanTargetWeight) || 0, baselineWeight: parseFloat(latestWeight), workoutEntries: [], dietEntries: [] });
+                setActivePlanId(newId);
                 setShowPlanModal(false); setView('home');
             };
 
-            const handleEditPlan = (plan) => {
-                setEditingPlanId(plan.id); setNewPlanTitle(plan.title); setNewPlanDate(plan.targetDate);
-                setNewPlanTargetWeight(plan.targetWeight.toString()); setShowPlanModal(true);
+            const executeDelete = async () => {
+                if (!confirmDelete || !activePlan) return;
+                const { type, id } = confirmDelete;
+                const key = type === 'workout' ? 'workoutEntries' : 'dietEntries';
+                const updatedList = activePlan[key].filter(e => e.id !== id);
+                await savePlanToCloud({ ...activePlan, [key]: updatedList });
+                setConfirmDelete(null);
             };
 
-            const handleCompleteRecommendation = async () => {
-                if (!activePlan) return;
-                const today = new Date().toISOString().split('T')[0];
-                const newEntry = {
-                    id: Date.now(), date: today, displayDate: `${parseInt(today.split('-')[1])}月${parseInt(today.split('-')[2])}日`,
-                    note: `打卡成功：${todayReinforcement.name}`, bodyParts: ['核心'], apparatus: ['墊上 (Mat)'],
-                    exercises: [{ name: todayReinforcement.name, sets: '15x3', category: '墊上 (Mat)' }], weight: parseFloat(latestWeight)
-                };
-                await savePlanToCloud({ ...activePlan, workoutEntries: [newEntry, ...(activePlan.workoutEntries || [])].sort((a,b) => new Date(b.date) - new Date(a.date)) });
-                setShowCelebration(true); setTimeout(() => setShowCelebration(false), 3000);
+            const handleQuickAddFood = (mealSetter, currentVal, foodName) => { mealSetter(`${currentVal}${currentVal.trim() ? '、' : ''}${foodName}`); };
+            const handleAddLabelInline = async (mealKey) => { if (!newLabelText.trim()) return; const updatedFoods = { ...commonFoods, [mealKey]: [...(commonFoods[mealKey] || []), newLabelText.trim()] }; setCommonFoods(updatedFoods); await setDoc(doc(db, 'artifacts', currentAppId, 'users', user.uid, 'settings', 'commonFoods'), updatedFoods); setNewLabelText(""); setInlineAddingMeal(null); };
+            const handleRemoveLabelInline = async (mealKey, labelIndex) => { const updatedFoods = { ...commonFoods, [mealKey]: commonFoods[mealKey].filter((_, i) => i !== labelIndex) }; setCommonFoods(updatedFoods); await setDoc(doc(db, 'artifacts', currentAppId, 'users', user.uid, 'settings', 'commonFoods'), updatedFoods); };
+            const handleSetPresetDate = (days) => { const date = new Date(); date.setDate(date.getDate() + days); setNewPlanDate(date.toISOString().split('T')[0]); };
+            const handleCompleteRecommendation = async () => { if (!activePlan) return; const now = new Date(); const newEntry = { id: Date.now(), date: now.toISOString().split('T')[0], time: now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }), displayDate: `${now.getMonth() + 1}月${now.getDate()}日`, note: `打卡：${todayReinforcement.name}`, bodyParts: ['核心'], apparatus: ['墊上 (Mat)'], exercises: [{ name: todayReinforcement.name, sets: customSets || todayReinforcement.sets, category: '墊上 (Mat)' }], weight: parseFloat(latestWeight) || 0 }; await savePlanToCloud({ ...activePlan, workoutEntries: [newEntry, ...(activePlan.workoutEntries || [])].sort((a,b) => new Date(b.date) - new Date(a.date)) }); setIsReinforcementDoneToday(true); setCustomSets(""); setShowCelebration(true); setTimeout(() => setShowCelebration(false), 3000); };
+            const closeModal = () => { setShowEntryModal(false); setShowPlanModal(false); setInlineAddingMeal(null); setEditingId(null); setWNote(''); setWParts([]); setWExercises([]); setDBreakfast(''); setDLunch(''); setDDinner(''); setDSnacks(''); setDWater(2000); setDTags([]); setNewPlanTitle(''); setNewPlanDate(''); setNewPlanTargetWeight(''); };
+            const handleEditWorkout = (entry) => { setEntryType('workout'); setEditingId(entry.id); setWNote(entry.note); setWParts(entry.bodyParts || []); setWExercises(entry.exercises || []); setWWeight(entry.weight?.toString() || '57.1'); setWDate(entry.date); setShowEntryModal(true); };
+            const handleEditDiet = (entry) => { setEntryType('diet'); setEditingId(entry.id); setDBreakfast(entry.breakfast || ''); setDLunch(entry.lunch || ''); setDDinner(entry.dinner || ''); setDSnacks(entry.snacks || ''); setDWater(entry.water || 2000); setDTags(entry.tags || []); setDDate(entry.date); setShowEntryModal(true); };
+
+            const renderTimeline = (entries, type) => {
+                let lastDate = "";
+                const filtered = historyFilterDate ? entries.filter(e => e.date === historyFilterDate) : entries;
+                return filtered.map((entry) => {
+                    const isNewDay = entry.date !== lastDate;
+                    lastDate = entry.date;
+                    const [y, m, d] = entry.date.split('-');
+                    return (
+                        <div key={entry.id} className="relative flex flex-col px-4">
+                            <div className="timeline-line"></div>
+                            {isNewDay && (
+                                <div className="flex items-center gap-3 py-4 z-10">
+                                    <div className="w-2.5 h-2.5 rounded-full bg-accent ring-4 ring-orange-100 shadow-[0_0_12px_rgba(249,153,26,0.4)]"></div>
+                                    <h4 className="text-[15px] font-bold text-brand tracking-tighter uppercase">{parseInt(m)}月{parseInt(d)}日 <span className="text-[10px] text-primary ml-1 opacity-50 font-normal tracking-widest uppercase">TIMELINE</span></h4>
+                                </div>
+                            )}
+                            <div className={`flex gap-4 ${isNewDay ? '' : 'pt-1'}`}>
+                                <div className="w-[10px] shrink-0"></div>
+                                <div className="flex-1 mb-4 bg-white rounded-kxl p-4 border border-primary/5 shadow-sm relative z-10">
+                                    <div className="flex justify-between items-start mb-3 text-brand">
+                                        <div className="flex items-center gap-2">
+                                            <div className="w-1.5 h-1.5 rounded-full bg-accent/30"></div>
+                                            <div className="flex items-center gap-1 text-[10px] font-bold text-primary opacity-60 bg-ingray px-2 py-0.5 rounded-lg"><Icon name="clock" size={10} /><span>{entry.time || '--:--'}</span></div>
+                                        </div>
+                                        <div className="flex items-center gap-1">
+                                            <button onClick={(e) => { e.stopPropagation(); type === 'workout' ? handleEditWorkout(entry) : handleEditDiet(entry); }} className="p-1.5 text-primary active:scale-90"><Icon name="edit-2" size={14} /></button>
+                                            <button onClick={(e) => { e.stopPropagation(); setConfirmDelete({type, id: entry.id}); }} className="p-1.5 text-primary active:scale-90 hover:text-red-400"><Icon name="trash-2" size={14} /></button>
+                                        </div>
+                                    </div>
+                                    {type === 'workout' ? (
+                                        <div className="space-y-2 text-brand">
+                                            {entry.exercises?.map((ex, i) => (<div key={i} className="flex justify-between items-center text-[14px]"><span className="text-brand font-medium">{ex.name}</span><span className="text-accent font-bold px-2 py-0.5 bg-orange-50 rounded-lg text-[12px]">{ex.sets}</span></div>))}
+                                        </div>
+                                    ) : (
+                                        <div className="space-y-3">
+                                            <div className="flex flex-col gap-2">
+                                                {entry.breakfast && <div className="flex items-start gap-3 text-brand"><Icon name="coffee" size={14} className="mt-1 text-primary opacity-40"/><p className="text-[14px] leading-relaxed">{entry.breakfast}</p></div>}
+                                                {entry.lunch && <div className="flex items-start gap-3 text-brand"><Icon name="sun" size={14} className="mt-1 text-primary opacity-40"/><p className="text-[14px] leading-relaxed">{entry.lunch}</p></div>}
+                                                {entry.dinner && <div className="flex items-start gap-3 text-brand"><Icon name="moon" size={14} className="mt-1 text-primary opacity-40"/><p className="text-[14px] leading-relaxed">{entry.dinner}</p></div>}
+                                                {entry.snacks && <div className="flex items-start gap-3 text-brand"><Icon name="cookie" size={14} className="mt-1 text-primary opacity-40"/><p className="text-[14px] opacity-60 leading-relaxed">{entry.snacks}</p></div>}
+                                            </div>
+                                            <div className="pt-2 border-t border-gray-50 flex justify-between items-center text-brand">
+                                                <div className="flex gap-1">{(entry.tags || []).map(t => <span key={t} className="text-[11px] font-bold text-primary opacity-60">#{t}</span>)}</div>
+                                                <div className="flex items-center gap-1 text-[11px] font-bold text-accent"><Icon name="droplets" size={12}/>{entry.water}cc</div>
+                                            </div>
+                                        </div>
+                                    )}
+                                    {entry.note && <p className="text-[12px] text-gray-400 italic mt-2 border-t border-gray-100 pt-2 truncate">"{entry.note}"</p>}
+                                </div>
+                            </div>
+                        </div>
+                    );
+                });
             };
-
-            const handleEditWorkout = (entry) => {
-                setEntryType('workout'); setEditingId(entry.id); setWNote(entry.note); setWParts(entry.bodyParts || []); setWExercises(entry.exercises || []); setWWeight(entry.weight?.toString() || '57.1'); setWDate(entry.date); setShowEntryModal(true);
-            };
-
-            const handleEditDiet = (entry) => {
-                setEntryType('diet'); setEditingId(entry.id); setDBreakfast(entry.breakfast || ''); setDLunch(entry.lunch || ''); setDDinner(entry.dinner || ''); setDSnacks(entry.snacks || ''); setDWater(entry.water || 2000); setDTags(entry.tags || []); setDDate(entry.date); setShowEntryModal(true);
-            };
-
-            const handleSetPresetDate = (days) => {
-                const date = new Date(); date.setDate(date.getDate() + days);
-                setNewPlanDate(date.toISOString().split('T')[0]);
-            };
-
-            if (!isConfigReady) {
-                return (
-                    <div className="h-full flex flex-col items-center justify-center bg-red-50 p-10 text-center">
-                        <Icon name="alert-circle" size={48} className="text-red-500 mb-4" />
-                        <h2 className="text-xl font-bold mb-2">尚未配置 Firebase</h2>
-                        <p className="text-sm text-gray-600">請在 index.html 程式碼中填入妳的 Firebase 金鑰，然後再次部署即可正常使用。</p>
-                    </div>
-                );
-            }
-
-            if (loading) return <div className="h-full flex flex-col items-center justify-center bg-[#f9991a] text-white gap-4"><Icon name="loader-2" className="animate-spin" /><p className="text-[14px] tracking-widest font-bold uppercase">找回 APP 中...</p></div>;
 
             return (
-                <div className={`h-full flex flex-col relative select-none transition-all duration-700 ${view === 'home' ? 'bg-gradient-to-b from-[#f9991a] to-[#ff8c00]' : 'bg-[#fbfbfe]'}`}>
-                    
+                <div className={`h-full flex flex-col relative select-none transition-all duration-700 ${view === 'home' ? 'bg-dynamic-flow' : 'bg-[#fbfbfe]'}`}>
+                    {view === 'home' && (<><div className="energy-stream stream-1"></div><div className="energy-stream stream-2"></div></>)}
+
                     {showCelebration && (
-                        <div className="absolute inset-0 z-[200] flex items-center justify-center pointer-events-none p-page text-center">
-                            <div className="bg-white/95 backdrop-blur-xl rounded-kxl p-8 flex flex-col items-center shadow-2xl border border-primary/20 animate-in zoom-in duration-500 text-brand">
-                                <Icon name="trophy" size={64} className="text-accent mb-4" />
-                                <h2 className="text-[20px] font-bold mb-2">同步成功！</h2>
-                                <p className="text-[14px] leading-relaxed opacity-80">
-                                    啟動後，您的目標將即時同步至雲端，開啟新挑戰。
-                                </p>
+                        <div className="fixed inset-0 z-[300] flex items-center justify-center p-6 animate-in fade-in zoom-in duration-300 text-brand">
+                            <div className="absolute inset-0 bg-[#040316]/60 backdrop-blur-md" />
+                            <div className="w-full max-w-[300px] bg-white rounded-[32px] p-8 flex flex-col items-center text-center relative z-10 shadow-2xl border border-white/20">
+                                <div className="w-20 h-20 bg-orange-100 rounded-full flex items-center justify-center mb-6 animate-bounce"><Icon name="trophy" size={48} className="text-accent" /></div>
+                                <h2 className="text-[22px] font-bold mb-2">打卡成功！✨</h2>
+                                <p className="text-[13px] text-gray-500 mb-6 leading-relaxed">紀錄已同步更新。每一點堅持，身體都會記得。繼續保持閃耀！</p>
+                                <button onClick={() => setShowCelebration(false)} className="w-full py-4 bg-accent text-white rounded-2xl font-bold active:scale-95 transition-all">收下讚美</button>
                             </div>
                         </div>
                     )}
 
-                    <header className={`px-page pb-4 pt-4 sticky top-0 z-30 flex justify-between items-end transition-colors duration-500 ${view === 'home' ? 'text-white' : 'text-brand border-b border-primary/10 bg-[#fbfbfe]/70 backdrop-blur-lg'}`}>
-                        <div onClick={() => setView('home')} className="active:scale-95 transition-transform origin-left cursor-pointer">
-                            {view === 'home' ? (
-                                <>
-                                    <p className="opacity-80 text-[12px] font-bold mb-1 uppercase tracking-[2px]">個人計畫進展</p>
-                                    <h1 className="text-[24px] font-bold tracking-tight drop-shadow-sm">{activePlan?.title || '未啟動計畫'}</h1>
-                                </>
-                            ) : (
-                                <div className="flex items-center gap-3">
-                                    <Icon name={view === 'workout_history' ? 'dumbbell' : view === 'diet_history' ? 'utensils' : 'flag'} className="text-primary" size={24} />
-                                    <h1 className="text-[18px] font-bold">{view === 'workout_history' ? '訓練歷史' : view === 'diet_history' ? '飲食誌' : '計畫管理'}</h1>
+                    {confirmDelete && (
+                        <div className="fixed inset-0 z-[400] flex items-center justify-center p-6 animate-in fade-in duration-200">
+                            <div className="absolute inset-0 bg-[#040316]/40 backdrop-blur-sm" />
+                            <div className="w-full max-w-[280px] bg-white rounded-[24px] p-6 text-center z-10 shadow-2xl border border-primary/10">
+                                <Icon name="alert-circle" size={40} className="text-red-400 mx-auto mb-4" />
+                                <h3 className="text-[18px] font-bold text-brand mb-2">確定刪除嗎？</h3>
+                                <p className="text-[13px] text-gray-500 mb-6">這筆紀錄刪除後將無法找回喔。</p>
+                                <div className="flex gap-3">
+                                    <button onClick={() => setConfirmDelete(null)} className="flex-1 py-3 bg-ingray rounded-xl text-brand font-bold text-[14px]">取消</button>
+                                    <button onClick={executeDelete} className="flex-1 py-3 bg-red-500 text-white rounded-xl font-bold text-[14px]">刪除</button>
                                 </div>
-                            )}
+                            </div>
                         </div>
-                        {view === 'home' && activePlan && (
-                            <div className="bg-[#ffeb3b] px-3 py-1.5 rounded-xl border border-black/5 shadow-md">
-                                <span className="text-brand font-bold text-[14px]">D-{daysLeft}</span>
+                    )}
+
+                    <header className={`px-page h-[44px] shrink-0 sticky top-0 z-30 flex items-center transition-all duration-500 ${view === 'home' ? 'text-white' : 'text-brand bg-[#fbfbfe]/80 backdrop-blur-lg border-b border-primary/10'}`}>
+                        {view === 'home' ? (
+                            <div className="flex items-center gap-2 w-full text-white">
+                                <div onClick={() => setView('home')} className="active:scale-95 transition-transform flex items-center gap-2 overflow-hidden flex-1 text-white">
+                                    <h1 className="text-[15px] font-bold tracking-tight truncate">{activePlan ? `${activePlan.title} · D-${daysLeft}` : "開啟妳的蛻變之旅"}</h1>
+                                    <span className="text-[10px] font-medium opacity-80 whitespace-nowrap bg-white/20 px-2 py-0.5 rounded-full">今天也要閃耀動人 ✨</span>
+                                </div>
+                            </div>
+                        ) : (
+                            <div className="flex items-center justify-between w-full">
+                                <div className="flex items-center gap-3">
+                                    <button onClick={() => {setView('home'); setHistoryFilterDate("");}} className="active:scale-90 text-brand"><Icon name="chevron-left" size={20}/></button>
+                                    <h1 className="text-[16px] font-bold tracking-tight text-brand">{view === 'workout_history' ? '訓練時間軸' : view === 'diet_history' ? '飲食生活誌' : '計畫管理'}</h1>
+                                </div>
+                                {(view === 'workout_history' || view === 'diet_history') && (
+                                    <div className="relative text-brand">
+                                        <input type="date" value={historyFilterDate} onChange={(e) => setHistoryFilterDate(e.target.value)} className="!bg-transparent !p-0 w-8 h-8 opacity-0 absolute inset-0 z-20 cursor-pointer" />
+                                        <div className={`w-8 h-8 rounded-full flex items-center justify-center transition-all ${historyFilterDate ? 'bg-accent text-white shadow-md' : 'bg-ingray text-brand opacity-60'}`}><Icon name={historyFilterDate ? "filter-x" : "search"} size={16} /></div>
+                                    </div>
+                                )}
                             </div>
                         )}
                     </header>
 
-                    <main className="flex-1 overflow-y-auto px-page py-6 space-y-4 no-scrollbar pb-[100px] text-brand">
+                    <main className="flex-1 overflow-y-auto py-6 space-y-4 no-scrollbar pb-[120px] text-brand z-10">
                         {view === 'home' ? (
-                            <>
+                            <div className="px-page space-y-4">
                                 {activePlan ? (
                                     <>
-                                        <section className="bg-white/90 backdrop-blur-md rounded-kxl p-5 border border-white/20 space-y-5">
-                                            <h3 className="text-[16px] font-bold text-brand uppercase tracking-widest opacity-80">目標追蹤</h3>
+                                        <section className="bg-white/90 backdrop-blur-md rounded-kxl p-5 space-y-5 shadow-sm text-brand">
+                                            <h3 className="text-[16px] font-bold uppercase tracking-widest opacity-80">數據儀表板</h3>
                                             <div className="flex items-center justify-between">
-                                                <div className="space-y-1">
-                                                    <p className="text-[12px] font-medium text-primary uppercase">當前數值</p>
-                                                    <p className="text-[28px] font-bold tracking-tighter leading-none text-brand">
-                                                        {latestWeight} <span className="text-[14px] font-normal opacity-60">kg</span>
-                                                    </p>
-                                                </div>
-                                                <div className="text-right space-y-1">
-                                                    <p className="text-[12px] font-medium text-primary uppercase">距目標還差</p>
-                                                    <p className="text-[28px] font-bold text-accent tracking-tighter leading-none">
-                                                        {(latestWeight - (activePlan?.targetWeight || 0)).toFixed(1)} <span className="text-[14px] font-normal opacity-60">kg</span>
-                                                    </p>
-                                                </div>
+                                                <div className="space-y-1"><p className="text-[12px] font-medium text-primary uppercase">當前體重</p><p className="text-[28px] font-bold tracking-tighter leading-none">{latestWeight} <span className="text-[14px] font-normal opacity-60">kg</span></p></div>
+                                                <div className="text-right space-y-1"><p className="text-[12px] font-medium text-primary uppercase">距離目標</p><p className="text-[28px] font-bold text-accent tracking-tighter leading-none">{(latestWeight - (activePlan?.targetWeight || 0)).toFixed(1)} <span className="text-[14px] font-normal opacity-60">kg</span></p></div>
                                             </div>
-                                            <div className="w-full h-3 bg-secondary rounded-full overflow-hidden border border-primary/5 shadow-inner">
-                                                <div className="h-full bg-accent animate-progress" style={{ width: `${Math.max(5, Math.min(100, (1 - (latestWeight - activePlan.targetWeight) / (activePlan.baselineWeight - activePlan.targetWeight || 1)) * 100))}%` }} />
-                                            </div>
+                                            <div className="w-full h-3 bg-secondary rounded-full overflow-hidden border border-primary/5 shadow-inner"><div className="h-full bg-accent animate-progress" style={{ width: `${activePlan ? Math.max(10, Math.min(100, (1 - (latestWeight - activePlan.targetWeight) / (activePlan.baselineWeight - activePlan.targetWeight || 1)) * 100)) : 0}%` }} /></div>
                                         </section>
-
-                                        <section className="bg-white/90 backdrop-blur-md rounded-kxl p-5 border border-white/20 space-y-5 active:scale-[0.98] transition-all">
-                                            <div className="space-y-2">
-                                                <h3 className="text-[16px] font-bold text-brand uppercase tracking-widest opacity-80">今日補強重點</h3>
-                                                <div className="bg-secondary/40 p-4 rounded-xl space-y-2 border border-primary/5">
-                                                    <h2 className="text-[22px] font-bold leading-tight text-brand">{todayReinforcement.name}</h2>
-                                                    <p className="text-brand/80 text-[14px] leading-relaxed pr-2 italic">“{todayReinforcement.desc}”</p>
+                                        <section className={`bg-white/90 backdrop-blur-md rounded-kxl border border-white/20 shadow-sm transition-all duration-500 overflow-hidden ${isReinforcementDoneToday ? 'p-0' : 'p-5'}`}>
+                                            {isReinforcementDoneToday ? (
+                                                <div className="p-10 flex flex-col items-center text-center space-y-5 animate-in fade-in zoom-in duration-500 text-brand">
+                                                    <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center text-green-500 shadow-sm"><Icon name="party-popper" size={32} /></div>
+                                                    <div><h3 className="text-[22px] font-bold mb-2">今天妳超棒的！💃</h3><p className="text-[14px] text-gray-500 px-6 leading-relaxed">補強目標已達成。妳今日的發力情況非常理想，想挑戰進階練習嗎？</p></div>
+                                                    <button onClick={() => {setIsExtraChallengeMode(true); setIsReinforcementDoneToday(false);}} className="premium-shine w-full py-4 bg-gradient-to-r from-brand to-[#5a7da0] text-white rounded-2xl font-bold text-[15px] flex items-center justify-center gap-2 active:scale-95 transition-all shadow-lg"><Icon name="zap" size={16} /> 體力還行，挑戰進階版？</button>
                                                 </div>
-                                            </div>
-                                            <div className="flex gap-3">
-                                                <a href={`https://www.youtube.com/results?search_query=皮拉提斯+${todayReinforcement.name}`} target="_blank" className="flex-1 bg-white/50 border border-primary/30 rounded-kxl h-11 flex items-center justify-center gap-2 text-[14px] font-bold active:scale-95 transition-all text-brand">
-                                                    <Icon name="youtube" size={16} /> 觀看教學
-                                                </a>
-                                                <button onClick={handleCompleteRecommendation} className="flex-1 bg-accent h-11 text-white rounded-kxl flex items-center justify-center gap-2 text-[14px] font-bold active:scale-95 shadow-lg shadow-orange-300">
-                                                    <Icon name="check-circle" size={16} /> 完成打卡
-                                                </button>
-                                            </div>
+                                            ) : (
+                                                <div className="space-y-6 animate-in slide-in-from-bottom-2 text-brand">
+                                                    <div className="space-y-3">
+                                                        <div className="flex justify-between items-center"><h3 className="text-[16px] font-bold uppercase tracking-widest opacity-80">今日補強建議</h3>{isExtraChallengeMode && <span className="bg-brand text-white text-[10px] font-bold px-3 py-1 rounded-full uppercase tracking-widest">ADVANCED</span>}</div>
+                                                        <div className="bg-white/60 border border-accent/10 p-5 rounded-2xl space-y-2"><h2 className="text-[24px] font-bold leading-tight">{todayReinforcement.name}</h2><p className="text-gray-500 text-[14px] leading-relaxed font-medium">“{todayReinforcement.desc}”</p></div>
+                                                    </div>
+                                                    <div className="space-y-2">
+                                                        <p className="text-[13px] font-bold uppercase tracking-widest opacity-60 ml-1">執行目標</p>
+                                                        <div className="flex items-center gap-3">
+                                                            <div className="flex-1 flex items-center bg-ingray rounded-xl px-4 py-3 shadow-inner"><Icon name="list-checks" size={16} className="text-primary mr-2" /><input value={customSets} onChange={(e) => setCustomSets(e.target.value)} className="w-full bg-transparent outline-none !p-0 font-bold" placeholder={`建議組數: ${todayReinforcement.sets}`} /></div>
+                                                            <a href={`https://www.youtube.com/results?search_query=皮拉提斯+${todayReinforcement.name.split(' (')[0]}`} target="_blank" rel="noreferrer" className="w-12 h-12 bg-white border border-primary/10 rounded-xl flex items-center justify-center text-red-500 active:scale-90 shadow-sm"><Icon name="youtube" size={24} /></a>
+                                                        </div>
+                                                    </div>
+                                                    <button onClick={handleCompleteRecommendation} className="w-full h-14 bg-accent text-white rounded-2xl font-bold shadow-lg shadow-orange-300 flex items-center justify-center gap-2 active:scale-95 transition-all text-[16px]"><Icon name="check-circle" size={20} /> 打卡完成</button>
+                                                </div>
+                                            )}
                                         </section>
                                     </>
                                 ) : (
-                                    <section onClick={() => { setEditingPlanId(null); setShowPlanModal(true); }} className="bg-white/90 backdrop-blur-md rounded-kxl p-10 border border-white/20 border-dashed flex flex-col items-center justify-center gap-4 active:scale-[0.98] transition-all cursor-pointer">
-                                        <div className="w-16 h-16 rounded-full bg-secondary flex items-center justify-center text-accent shadow-md"><Icon name="flag" size={32} /></div>
-                                        <div className="text-center space-y-2 text-brand">
-                                            <h2 className="text-[20px] font-bold">啟動衝刺計畫</h2>
-                                            <p className="text-[14px] text-primary font-medium leading-relaxed">設定週期與目標體重，<br/>見證每一天的改變。</p>
-                                        </div>
-                                        <button className="mt-4 px-8 h-11 bg-accent text-white rounded-kxl text-[14px] font-bold shadow-xl shadow-orange-400">立即設定目標</button>
-                                    </section>
+                                    <section onClick={() => setShowPlanModal(true)} className="bg-white/90 backdrop-blur-md rounded-kxl p-10 border-dashed border-2 border-white/40 flex flex-col items-center justify-center gap-4 cursor-pointer text-brand"><Icon name="flag" size={32} className="text-accent" /><h2 className="text-[20px] font-bold">啟動計畫見證改變</h2><button className="mt-4 px-8 h-11 bg-accent text-white rounded-xl text-[14px] font-bold shadow-xl shadow-orange-100">立即設定目標</button></section>
                                 )}
-
-                                <div className="grid grid-cols-2 gap-[16px]">
-                                    <button onClick={() => setView('workout_history')} className="bg-white/90 backdrop-blur-md rounded-kxl p-page border border-white/20 flex flex-col items-center gap-3 active:scale-95 transition-all text-brand shadow-sm">
-                                        <div className="w-12 h-12 rounded-kxl bg-secondary flex items-center justify-center text-primary border border-primary/10"><Icon name="dumbbell" size={24}/></div>
-                                        <p className="text-[16px] font-bold uppercase text-brand">訓練進展</p>
-                                        <p className="text-[14px] text-primary font-bold">{activePlan?.workoutEntries?.length || 0} 筆</p>
-                                    </button>
-                                    <button onClick={() => setView('diet_history')} className="bg-white/90 backdrop-blur-md rounded-kxl p-page border border-white/20 flex flex-col items-center gap-3 active:scale-95 transition-all text-brand shadow-sm">
-                                        <div className="w-12 h-12 rounded-kxl bg-secondary flex items-center justify-center text-primary border border-primary/10"><Icon name="utensils" size={24}/></div>
-                                        <p className="text-[16px] font-bold uppercase text-brand text-brand">飲食生活</p>
-                                        <p className="text-[14px] text-primary font-bold">{activePlan?.dietEntries?.length || 0} 筆</p>
-                                    </button>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <button onClick={() => setView('workout_history')} className="bg-white/90 backdrop-blur-md rounded-kxl p-5 flex flex-col items-center gap-3 active:scale-95 transition-all shadow-sm"><div className="w-12 h-12 rounded-kxl bg-accent/10 flex items-center justify-center text-accent border border-accent/20"><Icon name="dumbbell" size={24}/></div><p className="text-[16px] font-bold uppercase text-brand">訓練紀錄</p><p className="text-[14px] text-accent font-bold">{activePlan?.workoutEntries?.length || 0} 筆</p></button>
+                                    <button onClick={() => setView('diet_history')} className="bg-white/90 backdrop-blur-md rounded-kxl p-5 flex flex-col items-center gap-3 active:scale-95 transition-all shadow-sm text-brand"><div className="w-12 h-12 rounded-kxl bg-accent/10 flex items-center justify-center text-accent border border-accent/20"><Icon name="utensils" size={24}/></div><p className="text-[16px] font-bold uppercase text-brand">飲食日誌</p><p className="text-[14px] text-accent font-bold">{activePlan?.dietEntries?.length || 0} 筆</p></button>
                                 </div>
-                            </>
+                            </div>
                         ) : (
-                            <section className="space-y-4 pb-12 animate-in fade-in slide-in-from-bottom-2 duration-500 text-brand">
-                                {view !== 'plan_manage' && (view === 'workout_history' ? activePlan?.workoutEntries : activePlan?.dietEntries)?.map(entry => (
-                                    <div key={entry.id} className="flex gap-4">
-                                        <div className="w-12 shrink-0 text-center pt-2 text-brand text-brand">
-                                            <p className="text-[18px] font-bold leading-none">{entry.displayDate.split('月')[1].replace('日','')}</p>
-                                            <p className="text-[12px] text-primary font-bold">{entry.displayDate.split('月')[0]}月</p>
-                                        </div>
-                                        <div onClick={() => view === 'workout_history' ? handleEditWorkout(entry) : handleEditDiet(entry)} className="flex-1 bg-white rounded-kxl p-4 border border-primary/30 active:scale-[0.98] transition-all">
-                                            {view === 'workout_history' ? (
-                                                <div className="space-y-3">
-                                                    <p className="text-[12px] font-bold text-primary uppercase tracking-widest">{entry.apparatus.join(' • ')}</p>
-                                                    <div className="space-y-2">
-                                                        {entry.exercises.map((ex, i) => <div key={i} className="flex justify-between text-[14px] font-medium text-brand"><span>{ex.name}</span><span className="text-accent">{ex.sets}</span></div>)}
-                                                    </div>
-                                                </div>
-                                            ) : (
-                                                <div className="space-y-3">
-                                                    <div className="flex justify-between items-center"><div className="flex gap-1">{(entry.tags || []).map(t => <span key={t} className="text-[12px] font-bold text-primary">#{t}</span>)}</div><div className="text-[14px] text-primary font-bold">{entry.water}cc</div></div>
-                                                    <div className="text-[14px] space-y-1">
-                                                        {entry.breakfast && <div className="flex items-center gap-2 text-brand text-brand"><div className="w-1.5 h-1.5 rounded-full bg-accent" />{entry.breakfast}</div>}
-                                                        {entry.lunch && <div className="flex items-center gap-2 text-brand text-brand"><div className="w-1.5 h-1.5 rounded-full bg-accent" />{entry.lunch}</div>}
-                                                        {entry.dinner && <div className="flex items-center gap-2 text-brand text-brand"><div className="w-1.5 h-1.5 rounded-full bg-accent" />{entry.dinner}</div>}
-                                                    </div>
-                                                </div>
-                                            )}
-                                        </div>
-                                    </div>
-                                ))}
-                                
-                                {view === 'plan_manage' && (
-                                    <div className="space-y-4 pb-12">
-                                        <button onClick={() => { setEditingPlanId(null); setShowPlanModal(true); }} className="w-full py-12 bg-white rounded-kxl border-2 border-dashed border-primary/30 text-primary flex flex-col items-center gap-2 active:scale-95 transition-all shadow-sm">
-                                            <Icon name="plus" size={32} /><span className="font-bold text-[16px] uppercase tracking-widest text-brand">新增目標計畫</span>
-                                        </button>
+                            <section className="space-y-0 pb-12 animate-in fade-in duration-500">
+                                {view === 'plan_manage' ? (
+                                    <div className="px-page space-y-4">
+                                        <button onClick={() => {setEditingId(null); setShowPlanModal(true);}} className="w-full py-8 bg-white rounded-kxl border-2 border-dashed border-primary/30 text-primary flex flex-col items-center gap-2 active:scale-95 transition-all shadow-sm text-brand text-brand"><Icon name="plus" size={32} className="text-accent"/><span className="font-bold text-[16px] uppercase tracking-widest text-brand text-brand">新增目標計畫</span></button>
                                         {plans.map(p => (
-                                            <div key={p.id} className={`bg-white rounded-kxl border transition-all overflow-hidden ${activePlanId === p.id ? 'border-accent border-2 shadow-lg' : 'border-primary/30 shadow-sm'}`}>
-                                                <div className="px-5 pt-5 pb-3 flex justify-between items-start relative">
-                                                    <div className="flex items-center gap-2 pr-16 text-brand">
-                                                        <h3 className="text-[16px] font-bold leading-tight truncate">{p.title}</h3>
-                                                        {activePlanId === p.id && <span className="bg-accent text-white text-[10px] font-bold px-2 py-0.5 rounded-full uppercase whitespace-nowrap">執行中</span>}
-                                                    </div>
-                                                    <div className="absolute top-4 right-4 flex gap-1">
-                                                        <button onClick={(e) => { e.stopPropagation(); handleEditPlan(p); }} className="p-2 text-primary opacity-40 hover:opacity-100 active:scale-90 transition-all text-brand text-brand"><Icon name="edit-3" size={18}/></button>
-                                                        <button onClick={async (e) => { e.stopPropagation(); if(confirm('確定要刪除計畫嗎？')) await deleteDoc(doc(db, 'artifacts', currentAppId, 'users', user.uid, 'plans', p.id)); }} className="p-2 text-primary opacity-40 hover:opacity-100 hover:text-red-500 active:scale-90 transition-all text-brand text-brand text-brand"><Icon name="trash-2" size={18}/></button>
-                                                    </div>
+                                            <div key={p.id} className={`bg-white rounded-kxl border transition-all overflow-hidden shadow-sm ${activePlanId === p.id ? 'border-accent border-2 shadow-lg' : 'border-primary/30'}`}>
+                                                <div className="px-5 pt-5 pb-3 flex justify-between items-start relative text-brand">
+                                                    <div className="flex items-center gap-2 pr-16"><h3 className="text-[16px] font-bold leading-tight truncate">{p.title}</h3>{activePlanId === p.id && <span className="bg-[#ffeb3b] text-brand text-[10px] font-bold px-2 py-0.5 rounded-full uppercase whitespace-nowrap">執行中</span>}</div>
+                                                    <button onClick={async (e) => { e.stopPropagation(); if(confirm('確定要刪除計畫嗎？')) await deleteDoc(doc(db, 'artifacts', currentAppId, 'users', user.uid, 'plans', p.id)); }} className="p-2 text-primary opacity-40 active:scale-90 absolute right-4 top-4 hover:text-red-400"><Icon name="trash-2" size={18}/></button>
                                                 </div>
-                                                <div className="px-5 pb-5 space-y-4 text-brand text-brand">
+                                                <div className="px-5 pb-5 space-y-4 text-brand">
                                                     <div className="bg-secondary/40 rounded-xl p-3 grid grid-cols-2 gap-2 border border-primary/10">
-                                                        <div className="flex flex-col gap-1 border-r border-primary/10">
-                                                            <span className="text-[10px] font-bold text-primary uppercase text-brand">目標體重</span>
-                                                            <div className="flex items-center gap-1.5"><Icon name="target" size={14} className="text-accent" /><span className="text-[15px] font-bold text-brand text-brand">{p.targetWeight} <span className="text-[10px] opacity-60">KG</span></span></div>
-                                                        </div>
-                                                        <div className="flex flex-col gap-1 pl-2">
-                                                            <span className="text-[10px] font-bold text-primary uppercase">截止日期</span>
-                                                            <div className="flex items-center gap-1.5 text-brand text-brand"><Icon name="calendar" size={14} className="text-primary" /><span className="text-[15px] font-bold text-brand text-brand">{p.targetDate.split('-').slice(1).join('/')}</span></div>
-                                                        </div>
+                                                        <div className="flex flex-col gap-1 border-r border-primary/10"><span className="text-[10px] font-bold text-primary uppercase">目標體重</span><div className="flex items-center gap-1.5"><Icon name="target" size={14} className="text-accent" /><span className="text-[15px] font-bold">{p.targetWeight} <span className="text-[10px] opacity-60">KG</span></span></div></div>
+                                                        <div className="flex flex-col gap-1 pl-2"><span className="text-[10px] font-bold text-primary uppercase">截止日期</span><div className="flex items-center gap-1.5"><Icon name="calendar" size={14} className="text-primary" /><span className="text-[15px] font-bold">{p.targetDate.split('-').slice(1).join('/')}</span></div></div>
                                                     </div>
-                                                    {activePlanId !== p.id && (<button onClick={() => {setActivePlanId(p.id); setView('home');}} className="w-full h-11 bg-brand text-white rounded-kxl text-[14px] font-bold active:scale-95 transition-all shadow-md mt-2">啟動計畫</button>)}
+                                                    {activePlanId !== p.id && (<button onClick={() => {setActivePlanId(p.id); setView('home');}} className="w-full h-11 bg-brand text-white rounded-kxl text-[14px] font-bold active:scale-95 mt-2 shadow-md">啟動計畫</button>)}
                                                 </div>
                                             </div>
                                         ))}
                                     </div>
-                                )}
+                                ) : renderTimeline(view === 'workout_history' ? activePlan?.workoutEntries || [] : activePlan?.dietEntries || [], view === 'workout_history' ? 'workout' : 'diet')}
                             </section>
                         )}
                     </main>
 
-                    <nav className="absolute bottom-[16px] left-[16px] right-[16px] h-[72px] glass rounded-[24px] shadow-2xl border border-primary/10 flex justify-around items-center px-4 z-40 text-brand">
-                        <button onClick={() => setView('home')} className={`flex-1 flex flex-col items-center gap-1 transition-all ${view === 'home' ? 'text-accent' : 'text-brand/70 active:scale-90'}`}>
-                            <Icon name="home" size={22} fill={view === 'home' ? 'currentColor' : 'none'} /><span className="text-[12px] font-bold">首頁</span>
-                        </button>
-                        <button onClick={() => setView('workout_history')} className={`flex-1 flex flex-col items-center gap-1 transition-all ${view === 'workout_history' ? 'text-accent' : 'text-brand/70 active:scale-90'}`}>
-                            <Icon name="dumbbell" size={22} /><span className="text-[12px] font-bold">訓練</span>
-                        </button>
-                        
-                        <button onClick={() => { setEntryType('workout'); setEditingId(null); setShowEntryModal(true); }} className="mx-2 bg-accent w-12 h-12 rounded-[20px] flex items-center justify-center text-white active:scale-90 transition-all -translate-y-4 border-2 border-white shadow-xl shadow-orange-500/30">
-                            <Icon name="plus" size={28} />
-                        </button>
-
-                        <button onClick={() => setView('diet_history')} className={`flex-1 flex flex-col items-center gap-1 transition-all ${view === 'diet_history' ? 'text-accent' : 'text-brand/70 active:scale-90'}`}>
-                            <Icon name="utensils" size={22} /><span className="text-[12px] font-bold">飲食</span>
-                        </button>
-                        <button onClick={() => setView('plan_manage')} className={`flex-1 flex flex-col items-center gap-1 transition-all ${view === 'plan_manage' ? 'text-accent' : 'text-brand/70 active:scale-90'}`}>
-                            <Icon name="clipboard" size={22} /><span className="text-[12px] font-bold">計畫</span>
-                        </button>
+                    <nav className="absolute bottom-[16px] left-[16px] right-[16px] h-[72px] glass rounded-[24px] shadow-2xl border border-white/20 flex justify-around items-center px-4 z-40 text-brand text-brand">
+                        <button onClick={() => setView('home')} className={`flex flex-col items-center gap-1 transition-all ${view === 'home' ? 'text-accent scale-110' : 'text-brand/70 active:scale-95'}`}><Icon name="home" size={22} fill={view === 'home' ? 'currentColor' : 'none'} /><span className="text-[10px] font-bold">首頁</span></button>
+                        <button onClick={() => setView('workout_history')} className={`flex flex-col items-center gap-1 transition-all ${view === 'workout_history' ? 'text-accent scale-110' : 'text-brand/70 active:scale-95'}`}><Icon name="dumbbell" size={22} /><span className="text-[10px] font-bold">訓練</span></button>
+                        <button onClick={() => { setEntryType('diet'); setEditingId(null); setShowEntryModal(true); }} className="mx-2 bg-accent w-12 h-12 rounded-[20px] flex items-center justify-center text-white active:scale-90 transition-all -translate-y-4 border-2 border-white shadow-xl shadow-orange-500/30"><Icon name="plus" size={28} /></button>
+                        <button onClick={() => setView('diet_history')} className={`flex flex-col items-center gap-1 transition-all ${view === 'diet_history' ? 'text-accent scale-110' : 'text-brand/70 active:scale-95'}`}><Icon name="utensils" size={22} /><span className="text-[10px] font-bold">飲食</span></button>
+                        <button onClick={() => setView('plan_manage')} className={`flex flex-col items-center gap-1 transition-all ${view === 'plan_manage' ? 'text-accent scale-110' : 'text-brand/70 active:scale-95'}`}><Icon name="clipboard" size={22} /><span className="text-[10px] font-bold">計畫</span></button>
                     </nav>
 
-                    {/* Entry Modal */}
                     {showEntryModal && (
                         <div className="absolute inset-0 z-[110] flex items-end animate-in fade-in duration-300">
                             <div className="absolute inset-0 bg-brand/40 backdrop-blur-sm" onClick={closeModal} />
-                            <div className="w-full bg-[#fbfbfe] rounded-t-[32px] h-[92vh] z-10 flex flex-col animate-in slide-in-from-bottom-full duration-500 shadow-2xl border-t border-primary/20 overflow-hidden text-brand">
-                                <header className="px-6 py-4 border-b border-primary/5 flex justify-between items-center bg-white sticky top-0 z-20 shadow-sm text-brand">
-                                    <div className="w-10" />
-                                    <div className="flex bg-secondary p-1 rounded-kxl border border-primary/10">
-                                        <button onClick={() => setEntryType('workout')} className={`px-8 py-1.5 rounded-lg text-[14px] font-bold transition-all ${entryType === 'workout' ? 'bg-white shadow-sm' : 'text-primary'}`}>運動</button>
-                                        <button onClick={() => setEntryType('diet')} className={`px-8 py-1.5 rounded-lg text-[14px] font-bold transition-all ${entryType === 'diet' ? 'bg-white shadow-sm' : 'text-primary'}`}>飲食</button>
-                                    </div>
-                                    <button onClick={closeModal} className="p-2 active:scale-90 text-primary transition-transform"><Icon name="x" size={24} /></button>
+                            <div className="w-full bg-white rounded-t-[32px] h-[75vh] z-10 flex flex-col animate-in slide-in-from-bottom-full duration-500 shadow-2xl overflow-hidden text-brand">
+                                <header className="px-6 py-4 border-b border-primary/5 flex justify-between items-center bg-white sticky top-0 z-20 text-brand">
+                                    <button onClick={closeModal} className="text-primary font-bold p-2 active:scale-90 text-brand text-brand">取消</button>
+                                    <div className="flex bg-ingray p-1 rounded-xl"><button onClick={() => setEntryType('workout')} className={`px-8 py-1.5 rounded-lg text-[12px] font-medium transition-all ${entryType === 'workout' ? 'bg-white text-brand shadow-sm' : 'text-primary'}`}>運動</button><button onClick={() => setEntryType('diet')} className={`px-8 py-1.5 rounded-lg text-[12px] font-medium transition-all ${entryType === 'diet' ? 'bg-white text-brand shadow-sm' : 'text-primary'}`}>飲食</button></div>
+                                    <button onClick={entryType==='workout'?handleSaveWorkout:handleSaveDiet} disabled={entryType==='workout'?!isWorkoutValid:!isDietValid} className="text-accent font-bold p-2 active:scale-90 disabled:opacity-30">{editingId ? '更新' : '儲存'}</button>
                                 </header>
-                                <div className="flex-1 overflow-y-auto px-page py-6 space-y-4 no-scrollbar">
-                                    <div className="space-y-2 text-brand">
-                                        <p className="text-[16px] font-bold uppercase tracking-widest ml-1 text-brand">
-                                            {entryType === 'workout' ? '訓練日期' : '飲食日期'}
-                                        </p>
-                                        <div className="date-input-container bg-white border border-primary/30 h-11 rounded-kxl px-4 flex items-center focus-within:border-brand transition-all text-brand">
-                                            <input type="date" value={entryType === 'workout' ? w_date : d_date} onChange={e => entryType === 'workout' ? setWDate(e.target.value) : setDDate(e.target.value)} className="w-full bg-transparent font-bold text-[14px] outline-none text-accent relative z-10" />
-                                            <div className="absolute right-4 text-accent pointer-events-none opacity-60 text-brand text-brand"><Icon name="calendar" size={18} /></div>
+                                <div className="flex-1 overflow-y-auto px-page py-6 space-y-6 no-scrollbar text-brand">
+                                    <div className="space-y-2"><p className="text-[16px] font-bold uppercase tracking-widest ml-1">{entryType==='workout'?'訓練日期':'紀錄日期'}</p><div className="date-input-container shadow-sm"><input type="date" value={entryType==='workout'?w_date:d_date} onChange={e=>entryType==='workout'?setWDate(e.target.value):setDDate(e.target.value)} className="w-full bg-transparent font-bold text-accent outline-none" /><div className="absolute right-4 pointer-events-none opacity-40"><Icon name="calendar" size={18}/></div></div></div>
+                                    {entryType === 'diet' && (
+                                        <div className="space-y-2">
+                                            <p className="text-[16px] font-bold uppercase tracking-widest ml-1 text-brand">每日飲水</p>
+                                            <div className="bg-ingray rounded-2xl p-5 flex items-center justify-between shadow-inner">
+                                                <div className="flex items-center gap-4 text-brand"><Icon name="droplets" size={24} className="text-accent" /><div className="flex items-center"><input type="number" inputMode="numeric" pattern="[0-9]*" value={d_water} onChange={e=>setDWater(e.target.value === '' ? '' : Number(e.target.value))} className="w-20 bg-transparent text-[28px] font-bold outline-none !p-0" /><span className="text-[14px] font-bold text-primary ml-1">cc</span></div></div>
+                                                <div className="flex gap-2"><button onClick={()=>setDWater(Math.max(0, (Number(d_water)||0)-250))} className="w-11 h-11 bg-white border border-primary/10 rounded-full flex items-center justify-center text-xl active:scale-90">-</button><button onClick={()=>setDWater((Number(d_water)||0)+250)} className="w-11 h-11 bg-accent rounded-full flex items-center justify-center text-white text-xl active:scale-90 shadow-md shadow-orange-100">+</button></div>
+                                            </div>
                                         </div>
-                                    </div>
+                                    )}
                                     {entryType === 'workout' ? (
                                         <>
+                                            <div className="space-y-2 text-brand"><p className="text-[16px] font-bold uppercase tracking-widest ml-1">當前體重</p><div className="flex items-center bg-ingray rounded-xl px-4 py-3 shadow-inner"><input type="number" step="0.1" value={w_weight} onChange={e=>setWWeight(e.target.value)} className="w-full bg-transparent font-bold outline-none !p-0" /><span className="text-[12px] font-bold opacity-30 ml-2">KG</span></div></div>
+                                            <div className="space-y-2 text-brand"><p className="text-[16px] font-bold uppercase tracking-widest ml-1">訓練部位</p><div className="flex gap-2 flex-wrap text-brand">{BODY_PARTS.map(p => <button key={p} onClick={() => setWParts(v => v.includes(p) ? v.filter(i=>i!==p) : [...v,p])} className={`px-5 py-2.5 rounded-xl text-[14px] font-bold border transition-all ${w_parts.includes(p) ? 'bg-brand text-white border-brand' : 'bg-white border border-gray-200 text-primary'}`}>{p}</button>)}</div></div>
                                             <div className="space-y-2 text-brand">
-                                                <p className="text-[16px] font-bold uppercase tracking-widest ml-1 text-brand">當前體重</p>
-                                                <div className="bg-white border border-primary/30 h-11 rounded-kxl px-4 flex items-center focus-within:border-brand transition-all text-brand text-brand">
-                                                    <input type="number" step="0.1" value={w_weight} onChange={e => setWWeight(e.target.value)} className="w-full bg-transparent font-bold text-[14px] outline-none text-brand text-brand" />
-                                                    <span className="text-[12px] font-bold text-primary ml-2 uppercase tracking-widest text-brand text-brand">KG</span>
-                                                </div>
-                                            </div>
-                                            <div className="space-y-2 text-brand text-brand">
-                                                <p className="text-[16px] font-bold uppercase tracking-widest ml-1 text-brand text-brand">訓練部位</p>
-                                                <div className="flex gap-2 flex-wrap text-brand text-brand">{BODY_PARTS.map(p => <button key={p} onClick={() => setWParts(v => v.includes(p) ? v.filter(i=>i!==p) : [...v,p])} className={`px-5 py-2.5 h-11 rounded-kxl text-[14px] font-bold border transition-all text-brand text-brand ${w_parts.includes(p) ? 'bg-brand text-white border-brand' : 'bg-white text-primary border-primary/30'}`}>{p}</button>)}</div>
-                                            </div>
-                                            <div className="space-y-2 text-brand text-brand">
-                                                <p className="text-[16px] font-bold uppercase tracking-widest ml-1 text-brand text-brand">動作庫</p>
-                                                <div className="bg-white border border-primary/30 rounded-kxl p-4 space-y-4 text-brand text-brand">
-                                                    <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1 text-brand text-brand">
-                                                        {Object.keys(EXERCISE_LIBRARY).map(t => <button key={t} onClick={() => setWApparatus(t)} className={`px-4 py-2 h-11 rounded-kxl text-[14px] font-bold whitespace-nowrap border transition-all text-brand text-brand ${w_apparatus === t ? 'bg-brand text-white' : 'bg-white text-primary border-primary/30'}`}>{t}</button>)}
+                                                <p className="text-[16px] font-bold uppercase tracking-widest ml-1">動作內容</p>
+                                                <div className="bg-ingray/50 rounded-2xl p-4 space-y-4 border border-primary/5 shadow-inner">
+                                                    <div className="flex overflow-x-auto no-scrollbar gap-2 flex-nowrap pb-2">
+                                                        {Object.keys(EXERCISE_LIBRARY).map(t => (<button key={t} onClick={() => setWApparatus(t)} className={`px-4 py-2 rounded-xl text-[12px] font-bold border transition-all whitespace-nowrap ${w_apparatus === t ? 'bg-brand text-white shadow-md' : 'bg-white border-gray-200 text-primary'}`}>{t}</button>))}
                                                     </div>
-                                                    <div className="grid grid-cols-1 gap-2 text-brand text-brand">{(EXERCISE_LIBRARY[w_apparatus] || []).map(ex => {
-                                                        const idx = w_exercises.findIndex(i => i.name === ex.name && i.category === w_apparatus);
-                                                        const active = idx !== -1;
-                                                        return (
-                                                            <div key={ex.name} className={`flex flex-col rounded-kxl border transition-all text-brand text-brand ${active ? 'border-accent bg-white' : 'border-primary/20 bg-white'}`}>
-                                                                <div className="flex items-center justify-between p-3 text-brand text-brand">
-                                                                    <button onClick={() => active ? setWExercises(prev => prev.filter(i => !(i.name === ex.name && i.category === w_apparatus))) : setWExercises([...w_exercises, { name: ex.name, sets: '', category: w_apparatus }])} className="flex-1 flex items-center gap-3 text-left text-brand text-brand">
-                                                                        <div className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all text-brand text-brand ${active ? 'bg-accent text-white' : 'bg-secondary text-primary'}`}>{active ? <Icon name="check" size={16}/> : <Icon name="plus" size={16}/>}</div>
-                                                                        <span className="font-bold text-[14px] text-brand text-brand">{ex.name}</span>
-                                                                    </button>
-                                                                    <a href={`https://www.youtube.com/results?search_query=皮拉提斯+${ex.name}`} target="_blank" className="p-2 text-red-500 active:scale-90 transition-transform text-brand text-brand"><Icon name="youtube" size={18}/></a>
+                                                    <div className="grid grid-cols-1 gap-3 pt-2">
+                                                        {EXERCISE_LIBRARY[w_apparatus]?.map(ex => { 
+                                                            const idx = w_exercises.findIndex(i => i.name === ex.name && i.category === w_apparatus); 
+                                                            const active = idx !== -1; 
+                                                            return (
+                                                                <div key={ex.name} className={`bg-white rounded-xl border p-3 flex flex-col gap-2 transition-all ${active ? 'border-accent shadow-sm' : 'border-primary/5'}`} onClick={() => active ? setWExercises(v=>v.filter((_,i)=>i!==idx)) : setWExercises([...w_exercises, { name: ex.name, sets: '', category: w_apparatus }])}>
+                                                                    <div className="flex justify-between items-center text-brand text-brand"><div className="flex items-center gap-3"><div className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all ${active ? 'bg-accent text-white' : 'bg-ingray text-primary'}`}>{active ? <Icon name="check" size={16}/> : <Icon name="plus" size={16}/>}</div><span className="font-bold text-[14px] text-brand">{ex.name}</span></div><a href={`https://www.youtube.com/results?search_query=皮拉提斯+${ex.name.split(' (')[0]}`} target="_blank" rel="noreferrer" className="p-2 text-red-500 active:scale-90 text-brand"><Icon name="youtube" size={18}/></a></div>
+                                                                    {active && <input type="text" placeholder="設定組數 (例如: 15x3)" value={w_exercises[idx].sets} onChange={e=>{const val=e.target.value; setWExercises(prev=>prev.map((it,i)=>i===idx?{...it,sets:val}:it))}} onClick={e=>e.stopPropagation()} className="!bg-ingray rounded-lg px-3 py-2 text-[12px] outline-none border-none mt-1" />}
                                                                 </div>
-                                                                {active && <div className="px-3 pb-3 animate-in fade-in slide-in-from-top-1 text-brand text-brand"><input value={w_exercises[idx].sets} onChange={e => { const val = e.target.value; setWExercises(prev => prev.map(i => (i.name === ex.name && i.category === w_apparatus) ? { ...i, sets: val } : i)); }} placeholder="例如: 15x3" className="w-full bg-white border border-primary/30 rounded-kxl px-4 h-11 text-[14px] outline-none text-brand text-brand" /></div>}
-                                                            </div>
-                                                        )
-                                                    })}</div>
+                                                            );
+                                                        })}
+                                                    </div>
                                                 </div>
                                             </div>
-                                            <div className="space-y-2 text-brand text-brand">
-                                                <p className="text-[16px] font-bold uppercase tracking-widest ml-1 text-brand text-brand">訓練筆記</p>
-                                                <textarea value={w_note} onChange={e=>setWNote(e.target.value)} placeholder="分享訓練心得..." className="w-full h-32 bg-white border border-primary/30 rounded-kxl p-4 text-[14px] outline-none resize-none focus:border-brand transition-all text-brand text-brand" />
-                                            </div>
+                                            <div className="space-y-2 text-brand"><p className="text-[16px] font-bold uppercase tracking-widest ml-1 text-brand">訓練筆記</p><textarea value={w_note} onChange={e=>setWNote(e.target.value)} className="w-full h-32 bg-ingray rounded-xl p-4 text-[14px] outline-none shadow-inner focus:ring-2 focus:ring-orange-100 resize-none text-brand" placeholder="記錄今天的身體感受..." /></div>
                                         </>
                                     ) : (
                                         <>
-                                            <div className="space-y-2 text-brand text-brand text-brand text-brand"><p className="text-[16px] font-bold uppercase tracking-widest ml-1 text-brand text-brand text-brand text-brand">每日飲水</p><div className="bg-white border border-primary/30 rounded-kxl p-4 flex items-center justify-between shadow-none text-brand text-brand text-brand text-brand"><div className="flex items-center gap-4 text-brand text-brand text-brand text-brand"><Icon name="droplets" size={24} className="text-accent text-brand text-brand text-brand text-brand" /><div className="flex items-center text-brand text-brand text-brand text-brand"><input type="number" inputMode="numeric" pattern="[0-9]*" value={d_water} onChange={e => setDWater(e.target.value)} className="w-20 bg-transparent text-[24px] font-bold outline-none h-11 text-brand text-brand text-brand text-brand" /><span className="text-[14px] font-bold text-primary ml-1 text-brand text-brand text-brand text-brand">cc</span></div></div><div className="flex gap-2 text-brand text-brand text-brand text-brand text-brand"><button onClick={() => setDWater(v=>Math.max(0,v-250))} className="w-12 h-11 bg-secondary rounded-full flex items-center justify-center text-primary active:scale-90 text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand">-</button><button onClick={() => setDWater(v=>Number(v)+250)} className="w-12 h-12 bg-accent text-white rounded-full flex items-center justify-center active:scale-90 shadow-md shadow-orange-100 text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand">+</button></div></div></div>
-                                            <div className="space-y-4 pt-2 text-brand text-brand text-brand text-brand text-brand">{[{id:'breakfast',label:'早餐'}, {id:'lunch',label:'午餐'}, {id:'dinner',label:'晚餐'}, {id:'snacks',label:'點心/其他'}].map(m => {
-                                                const val = m.id==='breakfast'?d_breakfast : m.id==='lunch'?d_lunch : m.id==='dinner'?d_dinner : d_snacks;
-                                                const set = m.id==='breakfast'?setDBreakfast : m.id==='lunch'?setDLunch : m.id==='dinner'?setDDinner : setDSnacks;
-                                                return (
-                                                    <div key={m.id} className="space-y-2 text-brand text-brand text-brand text-brand text-brand">
-                                                        <p className="text-[16px] font-bold uppercase tracking-widest ml-1 text-brand text-brand text-brand text-brand text-brand">{m.label}</p>
-                                                        <div className="bg-white border border-primary/30 rounded-kxl p-4 space-y-3 text-brand text-brand text-brand text-brand text-brand">
-                                                            <textarea value={val} onChange={e=>set(e.target.value)} placeholder="手寫輸入飲食..." className="w-full bg-transparent text-[14px] outline-none min-h-[60px] resize-none text-brand text-brand text-brand text-brand text-brand" />
-                                                        </div>
+                                            {['breakfast', 'lunch', 'dinner', 'snacks'].map((meal) => (
+                                                <div key={meal} className="space-y-3 text-brand">
+                                                    <p className="text-[16px] font-bold uppercase tracking-widest ml-1 text-brand">{meal === 'breakfast' ? '早餐' : meal === 'lunch' ? '午餐' : meal === 'dinner' ? '晚餐' : '點心/其他'}</p>
+                                                    <textarea value={meal==='breakfast'?d_breakfast:meal==='lunch'?d_lunch:meal==='dinner'?d_dinner:d_snacks} onChange={(e)=>meal==='breakfast'?setDBreakfast(e.target.value):meal==='lunch'?setDLunch(e.target.value):meal==='dinner'?setDDinner(e.target.value):setDSnacks(e.target.value)} className="w-full bg-ingray rounded-xl p-4 text-[14px] shadow-inner focus:ring-2 focus:ring-orange-100 min-h-[80px] resize-none" placeholder="點擊標籤或手寫紀錄..." />
+                                                    <div className="flex flex-wrap gap-2 items-center text-brand">
+                                                        {commonFoods[meal]?.map((food, idx) => (<button key={idx} onClick={()=>handleQuickAddFood(meal==='breakfast'?setDBreakfast:meal==='lunch'?setDLunch:meal==='dinner'?setDDinner:setDSnacks, meal==='breakfast'?d_breakfast:meal==='lunch'?d_lunch:meal==='dinner'?d_dinner:d_snacks, food)} className="option-tag">{food}<span className="text-[10px] opacity-20 ml-1 text-brand" onClick={(e)=>{e.stopPropagation(); handleRemoveLabelInline(meal, idx);}}>✕</span></button>))}
+                                                        {inlineAddingMeal === meal ? (<div className="flex gap-1 animate-in slide-in-from-left-2 duration-200 text-brand"><input autoFocus value={newLabelText} onChange={(e) => setNewLabelText(e.target.value)} onBlur={()=>!newLabelText && setInlineAddingMeal(null)} onKeyDown={(e)=>e.key==='Enter' && handleAddLabelInline(meal)} className="w-24 !bg-white border border-accent rounded-lg px-2 py-1 text-[12px] outline-none !p-1 text-brand" placeholder="標籤名稱" /><button onClick={()=>handleAddLabelInline(meal)} className="p-1 bg-accent text-white rounded-lg"><Icon name="check" size={14}/></button><button onClick={()=>setInlineAddingMeal(null)} className="p-1 bg-gray-100 text-gray-400 rounded-lg"><Icon name="x" size={14}/></button></div>) : (<button onClick={()=>setInlineAddingMeal(meal)} className="p-2 border border-dashed border-gray-300 rounded-lg text-primary text-[12px] flex items-center gap-1 active:scale-95 text-brand"><Icon name="plus" size={14}/> 新增</button>)}
                                                     </div>
-                                                )
-                                            })}</div>
-                                            <div className="space-y-2 text-brand text-brand text-brand text-brand text-brand"><p className="text-[16px] font-bold uppercase tracking-widest ml-1 text-brand text-brand text-brand text-brand text-brand">標籤</p><div className="flex gap-2 flex-wrap text-brand text-brand text-brand text-brand text-brand">{DIET_TAGS.map(t=><button key={t} onClick={()=>setDTags(v=>v.includes(t)?v.filter(i=>i!==t):[...v,t])} className={`px-5 py-2.5 h-11 rounded-kxl text-[12px] font-bold border transition-all text-brand text-brand text-brand text-brand text-brand ${d_tags.includes(t)?'bg-brand text-white border-brand' : 'bg-white text-primary border-primary/30'}`}>{t}</button>)}</div></div>
+                                                </div>
+                                            ))}
+                                            <div className="space-y-2 text-brand"><p className="text-[16px] font-bold uppercase tracking-widest ml-1 text-brand">飲食標籤</p><div className="flex gap-2 flex-wrap">{DIET_TAGS.map(t => <button key={t} onClick={()=>setDTags(v=>v.includes(t)?v.filter(i=>i!==t):[...v,t])} className={`px-4 py-3 rounded-xl text-[12px] font-bold border transition-all ${d_tags.includes(t)?'bg-brand text-white shadow-sm' : 'bg-white border-gray-200 text-primary'}`}>{t}</button>)}</div></div>
                                         </>
                                     )}
-                                </div>
-                                <div className="p-page glass border-t border-primary/10 z-30 text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand">
-                                    <button onClick={entryType==='workout'?handleSaveWorkout:handleSaveDiet} disabled={!activePlan || (entryType==='diet'?!isDietValid : !isWorkoutValid)} className={`w-full h-11 rounded-kxl text-white font-bold text-[16px] shadow-xl transition-all ${entryType === 'workout' ? 'bg-accent shadow-orange-100' : 'bg-brand shadow-gray-200'} active:scale-95 disabled:opacity-30 text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand`}>{editingId ? '確認並更新' : `儲存紀錄`}</button>
                                 </div>
                             </div>
                         </div>
                     )}
 
-                    {/* New Plan Modal */}
                     {showPlanModal && (
-                        <div className="absolute inset-0 z-[110] flex items-end animate-in fade-in duration-300 text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand">
-                            <div className="absolute inset-0 bg-brand/40 backdrop-blur-sm" onClick={closeModal} />
-                            <div className="w-full bg-[#fbfbfe] rounded-t-[32px] h-[92vh] z-10 flex flex-col animate-in slide-in-from-bottom-full duration-500 shadow-2xl border-t border-primary/20 overflow-hidden text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand">
-                                <header className="px-page h-12 border-b border-primary/5 flex justify-between items-center bg-white sticky top-0 z-20 shadow-sm text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand">
-                                    <div className="w-10" />
-                                    <h3 className="text-[18px] font-bold text-center leading-none text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand">設定新衝刺目標</h3>
-                                    <button onClick={closeModal} className="p-2 active:scale-90 text-primary transition-transform text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand"><Icon name="x" size={24} /></button>
+                        <div className="absolute inset-0 z-[120] flex items-end animate-in fade-in duration-300">
+                            <div className="absolute inset-0 bg-brand/40 backdrop-blur-sm" onClick={() => setShowPlanModal(false)} />
+                            <div className="w-full bg-white rounded-t-[32px] h-[75vh] z-10 flex flex-col animate-in slide-in-from-bottom-full duration-500 shadow-2xl border-t border-primary/20 overflow-hidden text-brand">
+                                <header className="px-6 py-4 border-b border-primary/5 flex justify-between items-center bg-white sticky top-0 z-20 shadow-sm text-brand text-brand">
+                                    <button onClick={() => setShowPlanModal(false)} className="text-primary font-bold p-2 active:scale-90 text-brand text-brand">取消</button>
+                                    <h3 className="text-[18px] font-bold text-brand">設定新衝刺目標</h3>
+                                    <button onClick={handleCreatePlan} disabled={!newPlanTitle || !newPlanDate} className="text-accent font-bold p-2 active:scale-90 disabled:opacity-30">啟動</button>
                                 </header>
-                                <div className="flex-1 overflow-y-auto px-page py-6 space-y-4 no-scrollbar text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand">
-                                    <div className="space-y-2 text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand">
-                                        <div className="flex items-center gap-2 text-primary ml-1 text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand"><Icon name="flag" size={16} className="text-accent text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand" /><p className="text-[16px] font-bold uppercase tracking-widest text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand">計畫標題</p></div>
-                                        <div className="bg-white border border-primary/30 rounded-kxl px-4 flex items-center h-11 focus-within:border-brand transition-all shadow-none text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand"><input value={newPlanTitle} onChange={e=>setNewPlanTitle(e.target.value)} className="w-full bg-transparent text-[14px] font-bold outline-none placeholder:text-primary/40 h-full text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand" placeholder="例如：韓國 14 天衝刺計畫" /></div>
-                                    </div>
-                                    <div className="space-y-2 text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand">
-                                        <div className="flex justify-between items-center pr-1 ml-1 text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand">
-                                            <div className="flex items-center gap-2 text-primary text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand"><Icon name="calendar" size={16} className="text-accent text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand" /><p className="text-[16px] font-bold uppercase tracking-widest text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand">截止日期</p></div>
-                                            <div className="flex gap-2 text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand">
-                                                {[7, 14, 30].map(d => (
-                                                    <button key={d} onClick={() => handleSetPresetDate(d)} className="px-3 py-1 bg-white border border-primary/30 text-primary rounded-full text-[12px] font-bold active:scale-95 transition-all text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand">
-                                                        {d}天
-                                                    </button>
-                                                ))}
-                                            </div>
-                                        </div>
-                                        <div className="date-input-container bg-white border border-primary/30 rounded-kxl px-4 flex items-center h-11 relative focus-within:border-brand transition-all shadow-none text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand">
-                                            <input type="date" value={newPlanDate} onChange={e=>setNewPlanDate(e.target.value)} className="w-full bg-transparent font-bold text-accent outline-none h-full z-10 text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand" />
-                                            <div className="absolute right-4 text-accent pointer-events-none opacity-60 text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand"><Icon name="calendar" size={18} /></div>
-                                        </div>
-                                    </div>
-                                    <div className="space-y-2 text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand">
-                                        <div className="flex items-center gap-2 text-primary ml-1 text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand"><Icon name="target" size={16} className="text-accent text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand" /><p className="text-[16px] font-bold uppercase tracking-widest text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand">目標體重</p></div>
-                                        <div className="bg-white border border-primary/30 rounded-kxl px-4 flex items-center h-11 focus-within:border-brand transition-all shadow-none text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand">
-                                            <div className="flex items-center w-full justify-between text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand"><input type="number" step="0.1" value={newPlanTargetWeight} onChange={e=>setNewPlanTargetWeight(e.target.value)} className="bg-transparent font-bold text-accent outline-none flex-1 h-full text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand" placeholder="54.0" /><span className="text-[12px] font-bold text-primary ml-2 uppercase tracking-widest text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand">KG</span></div>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div className="p-page glass border-t border-primary/10 z-30 shadow-md text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand">
-                                    <button onClick={handleCreatePlan} disabled={!newPlanTitle || !newPlanDate || !newPlanTargetWeight} className="w-full h-11 rounded-kxl bg-accent text-white font-bold text-[16px] shadow-xl shadow-orange-100 active:scale-95 transition-all disabled:opacity-30 text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand">啟動新計畫</button>
+                                <div className="flex-1 overflow-y-auto px-page py-6 space-y-8 no-scrollbar text-brand text-brand">
+                                    <div className="space-y-3"><p className="text-[16px] font-bold uppercase tracking-widest ml-1 text-brand text-brand">達成日期</p><div className="date-input-container shadow-sm"><input type="date" value={newPlanDate} onChange={e=>setNewPlanDate(e.target.value)} className="w-full bg-transparent font-bold text-accent outline-none !p-3" /><div className="absolute right-4 text-accent pointer-events-none opacity-40 text-brand text-brand"><Icon name="calendar" size={20} /></div></div><div className="flex gap-2 pt-1">{[7, 14, 30].map(d => <button key={d} onClick={() => handleSetPresetDate(d)} className="px-4 py-2 bg-white border border-gray-200 rounded-lg text-[12px] font-bold active:scale-95 text-brand">{d}天</button>)}</div></div>
+                                    <div className="space-y-3 text-brand text-brand"><p className="text-[16px] font-bold uppercase tracking-widest ml-1">計畫名稱</p><input value={newPlanTitle} onChange={e=>setNewPlanTitle(e.target.value)} className="w-full !bg-ingray rounded-xl px-4 py-4 outline-none shadow-inner font-medium !p-4" placeholder="例如：韓國 14 天衝刺計畫" /></div>
+                                    <div className="space-y-3 text-brand text-brand"><p className="text-[16px] font-bold uppercase tracking-widest ml-1 text-brand text-brand">最終目標體重</p><div className="flex items-center !bg-ingray rounded-xl px-4 py-4 shadow-inner text-brand text-brand"><input type="number" step="0.1" value={newPlanTargetWeight} onChange={e=>setNewPlanTargetWeight(e.target.value)} className="w-full bg-transparent outline-none font-bold !p-0" placeholder="54.0" /><span className="text-[12px] font-bold opacity-30 ml-2 text-brand text-brand text-brand">KG</span></div></div>
                                 </div>
                             </div>
                         </div>
