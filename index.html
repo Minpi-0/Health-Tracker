@@ -249,7 +249,13 @@
 
         const App = () => {
             // Firebase Config & Init
-            const myFirebaseConfig = { apiKey: "", authDomain: "", projectId: "", storageBucket: "", messagingSenderId: "", appId: "" };
+            const myFirebaseConfig = {
+                apiKey: "AIzaSyBpCw2-cfSDaE0ABznkvULKD9sxgjlR9OI", // 例如: "AIzaSy..."
+                authDomain: "health-tracker-ed193.firebaseapp.com",
+                projectId: "health-tracker-ed193",
+                storageBucket: "health-tracker-ed193.firebasestorage.app",
+                messagingSenderId: "77615585267",
+                appId: "1:77615585267:web:451f6672cc9834dc92a486" };
             const firebaseConfig = (typeof __firebase_config !== 'undefined' && __firebase_config) ? JSON.parse(__firebase_config) : myFirebaseConfig;
             const isConfigReady = firebaseConfig && firebaseConfig.apiKey !== "";
             const currentAppId = typeof __app_id !== 'undefined' ? __app_id : 'k-glow-tracker-vercel';
