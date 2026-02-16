@@ -15,19 +15,22 @@
     <script src="https://unpkg.com/lucide@latest"></script>
     
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=Noto+Sans+TC:wght@300;400;500;700&display=swap');
         
         :root {
             --bg-color: #fbfbfe;
             --text-color: #040316; 
-            --accent-color: #f9991a;
-            --input-bg: #f2f4f7;
-            --gray-border: #e5e7eb;
+            --text-label: #4a5568; 
+            --accent-color: #f9991a; 
+            --primary-gray: #9caeba; 
+            --soft-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.08);
+            --glow-orange: 0 12px 25px -5px rgba(249, 153, 26, 0.4);
+            --radius-standard: 16px; 
         }
 
         body {
-            font-family: 'PingFang TC', 'Noto Sans TC', sans-serif;
-            background-color: #111; 
+            font-family: 'Inter', 'PingFang TC', 'Noto Sans TC', sans-serif;
+            background-color: #f0f2f5; 
             margin: 0;
             display: flex;
             justify-content: center;
@@ -43,7 +46,7 @@
             height: 100dvh; 
             background-color: var(--bg-color);
             position: relative;
-            box-shadow: 0 0 50px rgba(0,0,0,0.3);
+            box-shadow: 0 0 60px rgba(0,0,0,0.1);
             overflow: hidden;
             display: flex;
             flex-direction: column;
@@ -52,127 +55,128 @@
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
         
-        /* 統一視覺：圓角 16px、無邊線、一致灰底 */
+        /* 統一欄位與規格 */
         input, select { 
-            background-color: var(--input-bg) !important;
+            background-color: #f2f4f7 !important;
             border: none !important;
-            border-radius: 16px !important; 
-            padding: 0 16px !important; 
+            border-radius: var(--radius-standard) !important; 
+            height: 40px !important;
+            padding: 0 12px !important; 
             font-size: 14px !important;
             outline: none !important;
             color: var(--text-color) !important;
-            transition: all 0.2s ease;
+            box-shadow: none !important;
         }
 
         textarea {
-            background-color: var(--input-bg) !important;
+            background-color: #f2f4f7 !important;
             border: none !important;
-            border-radius: 16px !important;
-            padding: 12px 16px !important;
+            border-radius: var(--radius-standard) !important;
+            padding: 12px 12px !important;
             font-size: 14px !important;
-            outline: none !important;
             color: var(--text-color) !important;
-            transition: all 0.2s ease;
-        }
-        
-        input:focus, textarea:focus, select:focus {
-            background-color: #ebedf0 !important;
-        }
-
-        .option-tag {
-            background-color: white;
-            border: 1px solid var(--gray-border) !important;
-            padding: 8px 16px;
-            border-radius: 16px !important; 
-            font-size: 13px;
-            font-weight: 500;
-            color: var(--text-color);
+            outline: none !important;
             box-shadow: none !important;
+        }
+
+        .premium-card {
+            background: white;
+            border-radius: var(--radius-standard);
+            box-shadow: var(--soft-shadow);
+            border: 1px solid rgba(156, 174, 186, 0.1);
+        }
+
+        .island-navbar {
+            position: absolute;
+            bottom: 16px;
+            left: 16px;
+            right: 16px;
+            height: 72px;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border-radius: var(--radius-standard);
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 20px;
+            z-index: 50;
+        }
+
+        .glow-action-btn {
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(135deg, #fbbf24, #f9991a);
+            border-radius: 50%;
             display: flex;
             align-items: center;
-            gap: 6px;
-            transition: all 0.2s;
-            white-space: nowrap;
+            justify-content: center;
+            color: white;
+            box-shadow: var(--glow-orange);
+            transform: translateY(-22px);
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            border: 4px solid white;
+            font-weight: 800;
+        }
+        .glow-action-btn:active {
+            transform: translateY(-18px) scale(0.92);
         }
 
-        /* 時間軸垂直引導線 */
-        .timeline-line {
-            position: absolute;
-            left: 20px;
-            top: 0;
-            bottom: 0;
-            width: 2px;
-            background-color: var(--accent-color);
-            opacity: 0.15;
-            z-index: 0;
-        }
-
-        /* 背景流動效果 */
-        @keyframes bg-gradient-flow {
-            0% { background-position: 0% 50%; }
-            50% { background-position: 100% 50%; }
-            100% { background-position: 0% 50%; }
-        }
-        .bg-dynamic-flow {
-            background: linear-gradient(135deg, #f9991a, #ffb347, #ff8c00, #f9991a);
-            background-size: 400% 400%;
-            animation: bg-gradient-flow 12s ease infinite;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .energy-stream {
-            position: absolute;
-            width: 150%;
-            height: 40%;
-            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
-            filter: blur(40px);
-            z-index: 1;
-            pointer-events: none;
-        }
-        .stream-1 { top: 10%; left: -25%; animation: energy-wave 8s infinite ease-in-out; }
-        .stream-2 { bottom: 15%; left: -10%; animation: energy-wave 10s infinite reverse ease-in-out; }
-
-        @keyframes energy-wave {
-            0%, 100% { transform: translateY(0) rotate(0deg); }
-            50% { transform: translateY(-20px) rotate(5deg); }
-        }
-
-        .premium-shine { position: relative; overflow: hidden; }
-        .premium-shine::after {
-            content: '';
-            position: absolute;
-            top: 0; left: -100%; width: 60%; height: 100%;
-            background: linear-gradient(to right, transparent, rgba(255, 255, 255, 0.3), transparent);
-            transform: skewX(-25deg);
-            animation: advanced-shine 4s infinite ease-in-out;
-        }
-        @keyframes advanced-shine {
-            0% { left: -100%; }
-            25%, 100% { left: 100%; }
-        }
-
-        .glass { background: rgba(251, 251, 254, 0.85); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
-        .animate-progress { transition: width 1.5s cubic-bezier(0.34, 1.56, 0.64, 1); }
-
-        .date-input-container {
-            position: relative;
+        .calendar-circle {
+            width: 42px;
+            height: 42px;
+            border-radius: var(--radius-standard);
             display: flex;
             align-items: center;
-            width: 100%;
-            background-color: var(--input-bg);
-            border-radius: 16px; 
-            height: 40px; 
+            justify-content: center;
+            font-weight: 700;
+            transition: all 0.3s;
+            position: relative;
+            font-size: 13px;
         }
         
-        .date-input-container input[type="date"]::-webkit-calendar-picker-indicator {
+        .calendar-circle.fully-completed {
+            background-color: var(--accent-color);
+            color: white;
+            box-shadow: 0 4px 10px rgba(249, 153, 26, 0.3);
+        }
+        
+        .calendar-circle.selected-border:not(.fully-completed) {
+            border: 2px solid var(--accent-color);
+            color: var(--accent-color);
+            background-color: white;
+        }
+
+        .data-indicator-dot {
+            width: 4px;
+            height: 4px;
+            background-color: var(--accent-color);
+            border-radius: 50%;
             position: absolute;
-            top: 0; left: 0; right: 0; bottom: 0;
-            width: 100%; height: 100%;
-            background: transparent;
-            color: transparent;
-            cursor: pointer;
-            z-index: 10;
+            bottom: -8px;
+        }
+
+        .quick-period-btn {
+            height: 40px;
+            padding: 0 16px;
+            background-color: white;
+            border: 1px solid var(--primary-gray);
+            border-radius: var(--radius-standard);
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-color);
+            transition: all 0.2s;
+        }
+
+        /* 確認紀錄特效動畫 */
+        @keyframes success-pop {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.3) rotate(15deg); }
+            100% { transform: scale(1); }
+        }
+        .btn-success-anim {
+            animation: success-pop 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
     </style>
 
@@ -181,18 +185,11 @@
             theme: {
                 extend: {
                     colors: {
-                        primary: '#9caeba',
+                        brand: '#040316',
                         accent: '#f9991a',
-                        secondary: '#e9f1fb',
-                        brand: '#34495e',
-                        kbg: '#fbfbfe',
-                        ingray: '#f2f4f7'
-                    },
-                    spacing: {
-                        'page': '16px' 
-                    },
-                    borderRadius: {
-                        'kxl': '16px'
+                        muted: '#9caeba',
+                        ice: '#f2f7ff',
+                        label: '#4a5568'
                     }
                 }
             }
@@ -209,8 +206,8 @@
 
         const { useState, useMemo, useEffect, useRef } = React;
 
-        // --- 全域組件 ---
-        function Icon({ name, size = 24, className = "", fill = "none" }) {
+        // --- 全域組件：Icon ---
+        const Icon = ({ name, size = 24, className = "", fill = "none" }) => {
             const wrapperRef = useRef(null);
             useEffect(() => {
                 if (window.lucide && wrapperRef.current) {
@@ -222,530 +219,620 @@
                 }
             }, [name, size, className, fill]);
             return <span ref={wrapperRef} className={`inline-flex items-center justify-center shrink-0 ${className}`} style={{ width: size, height: size }} />;
-        }
+        };
 
-        // --- 常數數據 ---
+        // --- 全域常數 ---
         const BODY_PARTS = ['核心', '上半身', '下半身', '全身流動'];
         const DIET_TAGS = ['蛋白質足夠', '低醣飲食', '輕食無負擔', '獎勵餐'];
+        const MOOD_OPTIONS = [
+            { icon: '🔥', label: '激昂', value: 'excited' },
+            { icon: '😊', label: '舒爽', value: 'good' },
+            { icon: '💦', label: '爆汗', value: 'sweat' },
+            { icon: '😴', label: '疲累', value: 'tired' }
+        ];
         const DAILY_REINFORCEMENTS = [
-            { name: '死蟲式 (Dead Bug)', sets: '15x3', desc: '啟動深層腹肌，穩定骨盆位置。', challenge: { name: '進階死蟲式 (加重球)', sets: '12x4', desc: '挑戰核心穩定性與肌耐力。' } },
-            { name: '貓牛式 (Cat-Cow)', sets: '10x2', desc: '找回脊椎逐節流動感，釋放壓力。', challenge: { name: '動態平衡貓牛式', sets: '8x3', desc: '增加對側平衡難度。' } },
-            { name: '鳥狗式 (Bird-Dog)', sets: '12x3', desc: '建立交叉鏈穩定，強化軀幹。', challenge: { name: '懸空鳥狗式', sets: '6x3', desc: '膝蓋離地挑戰極限支撐。' } },
-            { name: '臀橋 (Glute Bridge)', sets: '20x3', desc: '喚醒臀大肌，保護下腰椎。', challenge: { name: '單腳臀橋', sets: '10x3', desc: '平衡左右肌力差異。' } },
-            { name: '天鵝式 (Swan)', sets: '8x3', desc: '開展胸腔，強化上背體態。', challenge: { name: '天鵝式 2 型', sets: '10x2', desc: '深度開展胸椎區域。' } }
+          { name: '死蟲式 (Dead Bug)', desc: '穩定深層核心，提升腰椎控制力。' },
+          { name: '貓牛式 (Cat-Cow)', desc: '優化脊椎活動度，舒緩背部壓力。' },
+          { name: '鳥狗式 (Bird-Dog)', desc: '強化對側穩定鏈，建立平衡力。' },
+          { name: '臀橋 (Glute Bridge)', desc: '喚醒臀部肌群，分擔腰部壓力。' },
+          { name: '天鵝式 (Swan)', desc: '開展胸腔空間，強化上背肌力。' }
         ];
         const EXERCISE_LIBRARY = {
-            '核心床 (Reformer)': [{ name: '足部練習', category: '核心床 (Reformer)' }, { name: '大象式', category: '核心床 (Reformer)' }, { name: '捲腹', category: '核心床 (Reformer)' }],
-            '凱迪拉克 (Cadillac)': [{ name: '逐節捲動', category: '凱迪拉克 (Cadillac)' }, { name: '胸口擴展', category: '凱迪拉克 (Cadillac)' }],
-            '穩踏椅 (Chair)': [{ name: '天鵝式', category: '穩踏椅 (Chair)' }, { name: '推地式', category: '穩踏椅 (Chair)' }],
-            '墊上 (Mat)': [{ name: '百次呼吸', category: '墊上 (Mat)' }, { name: '死蟲式', category: '墊上 (Mat)' }]
+          '核心床 (Reformer)': [{ name: '足部練習', category: '核心床 (Reformer)' }, { name: '大象式', category: '核心床 (Reformer)' }, { name: '捲腹', category: '核心床 (Reformer)' }],
+          '墊上 (Mat)': [{ name: '百次呼吸', category: '墊上 (Mat)' }, { name: '死蟲式', category: '墊上 (Mat)' }]
         };
         const DEFAULT_QUICK_FOODS = {
-            breakfast: ["無糖豆漿", "水煮蛋", "黑咖啡"],
-            lunch: ["雞胸肉", "糙米飯", "健康餐盒"],
-            dinner: ["清蒸魚", "豆腐", "大拌菜"],
-            snacks: ["綜合堅果", "希臘優格", "藍莓"]
+          breakfast: ["無糖豆漿", "水煮蛋", "燕麥片"],
+          lunch: ["舒肥雞胸", "健康餐盒", "清蔬沙拉"],
+          dinner: ["清蒸魚", "嫩煎豆腐", "水煮時蔬"],
+          snacks: ["綜合堅果", "高蛋白飲", "無糖優格"]
         };
 
         const App = () => {
-            // Firebase Config & Init
-            const myFirebaseConfig = {
-                apiKey: "AIzaSyBpCw2-cfSDaE0ABznkvULKD9sxgjlR9OI", // 例如: "AIzaSy..."
-                authDomain: "health-tracker-ed193.firebaseapp.com",
-                projectId: "health-tracker-ed193",
-                storageBucket: "health-tracker-ed193.firebasestorage.app",
-                messagingSenderId: "77615585267",
-                appId: "1:77615585267:web:451f6672cc9834dc92a486" };
-            const firebaseConfig = (typeof __firebase_config !== 'undefined' && __firebase_config) ? JSON.parse(__firebase_config) : myFirebaseConfig;
-            const isConfigReady = firebaseConfig && firebaseConfig.apiKey !== "";
-            const currentAppId = typeof __app_id !== 'undefined' ? __app_id : 'k-glow-tracker-vercel';
-
+            // --- 1. 狀態宣告 (useState) ---
             const [user, setUser] = useState(null);
             const [db, setDb] = useState(null);
             const [loading, setLoading] = useState(true);
             const [view, setView] = useState('home'); 
             const [showEntryModal, setShowEntryModal] = useState(false);
             const [showPlanModal, setShowPlanModal] = useState(false);
+            const [showGuideModal, setShowGuideModal] = useState(false);
             const [entryType, setEntryType] = useState('workout');
-            const [showCelebration, setShowCelebration] = useState(false);
             const [editingId, setEditingId] = useState(null);
             const [confirmDelete, setConfirmDelete] = useState(null); 
-
             const [plans, setPlans] = useState([]);
             const [activePlanId, setActivePlanId] = useState(null);
-            const [commonFoods, setCommonFoods] = useState(DEFAULT_QUICK_FOODS);
-            
-            const [inlineAddingMeal, setInlineAddingMeal] = useState(null);
-            const [newLabelText, setNewLabelText] = useState("");
-            const [historyFilterDate, setHistoryFilterDate] = useState("");
+            const [weekOffset, setWeekOffset] = useState(0);
+            const [historyFilterDate, setHistoryFilterDate] = useState(new Date().toISOString().split('T')[0]);
 
-            const [customSets, setCustomSets] = useState("");
-            const [isReinforcementDoneToday, setIsReinforcementDoneToday] = useState(false);
-            const [isExtraChallengeMode, setIsExtraChallengeMode] = useState(false);
-
-            // 表單狀態
+            // 表單輸入狀態
             const [w_note, setWNote] = useState('');
             const [w_parts, setWParts] = useState([]);
-            const [w_apparatus, setWApparatus] = useState('核心床 (Reformer)');
             const [w_exercises, setWExercises] = useState([]);
-            const [w_weight, setWWeight] = useState('57.1');
+            const [w_weight, setWWeight] = useState('');
+            const [w_mood, setWMood] = useState('good');
             const [w_date, setWDate] = useState(new Date().toISOString().split('T')[0]);
             const [d_breakfast, setDBreakfast] = useState('');
             const [d_lunch, setDLunch] = useState('');
             const [d_dinner, setDDinner] = useState('');
             const [d_snacks, setDSnacks] = useState('');
             const [d_water, setDWater] = useState(2000);
+            const [d_kcal, setDKcal] = useState(0); 
+            const [d_p, setDP] = useState(0);
+            const [d_c, setDC] = useState(0);
+            const [d_f, setDF] = useState(0);
             const [d_tags, setDTags] = useState([]);
             const [d_date, setDDate] = useState(new Date().toISOString().split('T')[0]);
 
+            // 計畫輸入狀態
             const [newPlanTitle, setNewPlanTitle] = useState('');
             const [newPlanDate, setNewPlanDate] = useState('');
+            const [newPlanBaselineWeight, setNewPlanBaselineWeight] = useState('');
             const [newPlanTargetWeight, setNewPlanTargetWeight] = useState('');
 
-            // 計算屬性
+            // 特效狀態
+            const [showCelebration, setShowCelebration] = useState(false);
+            const [weightSavedEffect, setWeightSavedEffect] = useState(false);
+
+            const touchStartX = useRef(null);
+            const firebaseConfig = (typeof __firebase_config !== 'undefined' && __firebase_config) ? JSON.parse(__firebase_config) : { apiKey: "" };
+            const isConfigReady = firebaseConfig && firebaseConfig.apiKey !== "";
+            const currentAppId = typeof __app_id !== 'undefined' ? __app_id : 'k-glow-tracker-vercel';
+
+            // --- 2. 計算屬性 (useMemo) ---
             const activePlan = useMemo(() => plans.find(p => p.id === activePlanId) || null, [plans, activePlanId]);
-            const latestWeight = useMemo(() => activePlan?.workoutEntries?.[0]?.weight || activePlan?.baselineWeight || 57.1, [activePlan]);
+            
+            const latestWeight = useMemo(() => {
+                const latestFromLogs = activePlan?.workoutEntries?.find(e => e.weight > 0)?.weight;
+                return latestFromLogs || activePlan?.baselineWeight || null;
+            }, [activePlan]);
+            
             const daysLeft = useMemo(() => {
                 if (!activePlan) return 0;
                 const target = new Date(activePlan.targetDate);
                 const today = new Date();
-                today.setHours(0, 0, 0, 0); target.setHours(0, 0, 0, 0);
-                const diffTime = target - today;
-                return Math.max(0, Math.ceil(diffTime / (1000 * 60 * 60 * 24)));
+                today.setHours(0,0,0,0); target.setHours(0,0,0,0);
+                return Math.max(0, Math.ceil((target - today) / (1000 * 60 * 60 * 24)));
             }, [activePlan]);
-            
+
+            const workoutLogsCount = useMemo(() => activePlan?.workoutEntries?.filter(e => e.date === historyFilterDate).length || 0, [activePlan, historyFilterDate]);
+            const dietLogsCount = useMemo(() => activePlan?.dietEntries?.filter(e => e.date === historyFilterDate).length || 0, [activePlan, historyFilterDate]);
+
+            const weekDaysList = useMemo(() => {
+                const now = new Date();
+                const startOfWeek = new Date(now);
+                startOfWeek.setDate(now.getDate() - now.getDay() + (weekOffset * 7));
+                return Array.from({ length: 7 }, (_, i) => {
+                    const d = new Date(startOfWeek);
+                    d.setDate(startOfWeek.getDate() + i);
+                    return { date: d.toISOString().split('T')[0], label: ['日','一','二','三','四','五','六'][i], num: d.getDate(), month: d.getMonth() + 1 };
+                });
+            }, [weekOffset]);
+
             const todayReinforcement = useMemo(() => {
-                const item = DAILY_REINFORCEMENTS[new Date().getDate() % DAILY_REINFORCEMENTS.length];
-                return isExtraChallengeMode ? item.challenge : item;
-            }, [isExtraChallengeMode]);
+                const dateObj = new Date(historyFilterDate);
+                const dayNum = isNaN(dateObj.getDate()) ? new Date().getDate() : dateObj.getDate();
+                return DAILY_REINFORCEMENTS[dayNum % DAILY_REINFORCEMENTS.length];
+            }, [historyFilterDate]);
 
-            const isDietValid = useMemo(() => activePlan && (Number(d_water) >= 0) && (d_breakfast.trim() || d_lunch.trim() || d_dinner.trim() || d_snacks.trim()), [d_water, d_breakfast, d_lunch, d_dinner, d_snacks, activePlan]);
-            const isWorkoutValid = useMemo(() => activePlan && (w_parts.length > 0 || w_exercises.length > 0), [w_parts, w_exercises, activePlan]);
+            const historyTotals = useMemo(() => {
+                if (!activePlan || !activePlan.dietEntries) return { kcal: 0, p: 0, c: 0, f: 0 };
+                return activePlan.dietEntries
+                    .filter(e => e.date === historyFilterDate)
+                    .reduce((acc, curr) => ({
+                        kcal: acc.kcal + (curr.kcal || 0),
+                        p: acc.p + (curr.p || 0),
+                        f: acc.f + (curr.f || 0),
+                        c: acc.c + (curr.c || 0)
+                    }), { kcal: 0, p: 0, c: 0, f: 0 });
+            }, [activePlan, historyFilterDate]);
 
-            // --- 操作函數 ---
+            const nutrientInsight = useMemo(() => {
+                if (historyTotals.kcal === 0) return "今天還沒有紀錄紀錄喔";
+                if (historyTotals.p > 50) return "蛋白質達標！妳的肌肉正在對妳微笑！💪";
+                return "比例非常漂亮！妳簡直是體態管理大師，繼續保持！🌟";
+            }, [historyTotals]);
+
+            // --- 3. 事件處理函數 (置頂定義) ---
+            const dateStats = (dateStr) => {
+                if (!activePlan) return { workout: false, diet: false };
+                return {
+                    workout: (activePlan.workoutEntries || []).some(e => e.date === dateStr && (e.exercises?.length > 0 || e.parts?.length > 0)),
+                    diet: (activePlan.dietEntries || []).some(e => e.date === dateStr && (e.breakfast || e.lunch || e.dinner))
+                };
+            };
+
+            const closeModal = () => { 
+                setShowEntryModal(false); setShowPlanModal(false); setEditingId(null); 
+                setWNote(''); setWParts([]); setWExercises([]); setDBreakfast(''); setDLunch(''); setDDinner(''); setDSnacks(''); setDWater(2000); 
+                setDKcal(0); setDP(0); setDC(0); setDF(0); setDTags([]); setWMood('good');
+                setNewPlanTitle(''); setNewPlanDate(''); setNewPlanBaselineWeight(''); setNewPlanTargetWeight('');
+            };
+
+            const handleTouchStart = (e) => { touchStartX.current = e.touches[0].clientX; };
+            const handleTouchEnd = (e) => {
+                if (touchStartX.current === null) return;
+                const deltaX = e.changedTouches[0].clientX - touchStartX.current;
+                if (deltaX > 50) setWeekOffset(v => v - 1); 
+                else if (deltaX < -50) setWeekOffset(v => v + 1); 
+                touchStartX.current = null;
+            };
+
             const savePlanToCloud = async (updated) => {
                 if (!user || !db || !updated.id) return;
                 await setDoc(doc(db, 'artifacts', currentAppId, 'users', user.uid, 'plans', updated.id), updated);
             };
 
+            const handleUpdateWeightOnHome = async (val) => {
+              if (!activePlan) return;
+              setWWeight(val);
+              const weightVal = parseFloat(val);
+              if (isNaN(weightVal) || weightVal <= 0) return;
+              
+              // 觸發確認特效
+              setWeightSavedEffect(true);
+              setShowCelebration(true);
+              
+              const today = new Date().toISOString().split('T')[0];
+              const entry = { id: Date.now(), date: today, displayDate: `${new Date().getMonth() + 1}月${new Date().getDate()}日`, note: '今日稱重', parts: [], exercises: [], weight: weightVal, mood: 'good' };
+              const updated = [entry, ...(activePlan.workoutEntries || [])].sort((a,b) => new Date(b.date) - new Date(a.date));
+              await savePlanToCloud({ ...activePlan, workoutEntries: updated });
+              
+              setTimeout(() => {
+                  setWeightSavedEffect(false);
+                  setShowCelebration(false);
+              }, 1500);
+            };
+
             const handleCreatePlan = async () => {
                 if (!newPlanTitle || !newPlanDate) return;
                 const newId = `p-${Date.now()}`;
-                await savePlanToCloud({ id: newId, title: newPlanTitle, targetDate: newPlanDate, targetWeight: parseFloat(newPlanTargetWeight) || 0, baselineWeight: parseFloat(latestWeight), workoutEntries: [], dietEntries: [] });
-                setActivePlanId(newId); setShowPlanModal(false); setView('home');
+                const baseline = parseFloat(newPlanBaselineWeight) || 0;
+                await savePlanToCloud({ id: newId, title: newPlanTitle, targetDate: newPlanDate, targetWeight: parseFloat(newPlanTargetWeight) || 0, baselineWeight: baseline, workoutEntries: [], dietEntries: [] });
+                setActivePlanId(newId); setShowPlanModal(false); setView('home'); setShowGuideModal(true);
             };
 
-            const handleSetPresetDate = (days) => {
-                const date = new Date(); date.setDate(date.getDate() + days);
-                setNewPlanDate(date.toISOString().split('T')[0]);
+            const handleQuickAddFood = (mealSetter, currentVal, foodName) => { 
+                const val = currentVal || ""; mealSetter(`${val}${val.trim() ? '、' : ''}${foodName}`); 
             };
 
-            const handleCompleteRecommendation = async () => {
-                if (!activePlan) return;
-                const now = new Date();
-                const newEntry = { 
-                    id: Date.now(), date: now.toISOString().split('T')[0], 
-                    time: now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }), 
-                    displayDate: `${now.getMonth() + 1}月${now.getDate()}日`, 
-                    note: `打卡：${todayReinforcement.name}`, bodyParts: ['核心'], apparatus: ['墊上 (Mat)'], 
-                    exercises: [{ name: todayReinforcement.name, sets: customSets || todayReinforcement.sets, category: '墊上 (Mat)' }], 
-                    weight: parseFloat(latestWeight) || 0 
-                };
-                await savePlanToCloud({ ...activePlan, workoutEntries: [newEntry, ...(activePlan.workoutEntries || [])].sort((a,b) => new Date(b.date) - new Date(a.date)) });
-                setIsReinforcementDoneToday(true); setCustomSets(""); setShowCelebration(true); setTimeout(() => setShowCelebration(false), 3000);
+            const handleSetQuickDate = (days) => {
+                const d = new Date(); d.setDate(d.getDate() + days); setNewPlanDate(d.toISOString().split('T')[0]);
+            };
+
+            const handleEditWorkout = (entry) => { 
+                setEntryType('workout'); setEditingId(entry.id); setWNote(entry.note || ''); setWParts(entry.parts || []); setWExercises(entry.exercises || []); setWWeight(entry.weight?.toString() || ''); setWDate(entry.date); setWMood(entry.mood || 'good'); setShowEntryModal(true); 
+            };
+            
+            const handleEditDiet = (entry) => { 
+                setEntryType('diet'); setEditingId(entry.id); setDBreakfast(entry.breakfast || ''); setDLunch(entry.lunch || ''); setDDinner(entry.dinner || ''); setDSnacks(entry.snacks || ''); setDWater(entry.water || 2000); setDKcal(entry.kcal || 0); setDP(entry.p || 0); setDDate(entry.date); setDTags(entry.tags || []); setShowEntryModal(true); 
             };
 
             const handleSaveDiet = async () => {
                 if (!activePlan) return;
-                const now = new Date();
-                const entry = { id: editingId || Date.now(), date: d_date, time: now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }), displayDate: `${parseInt(d_date.split('-')[1])}月${parseInt(d_date.split('-')[2])}日`, breakfast: d_breakfast, lunch: d_lunch, dinner: d_dinner, snacks: d_snacks, water: Number(d_water), tags: d_tags };
+                const entry = { id: editingId || Date.now(), date: d_date, time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }), breakfast: d_breakfast, lunch: d_lunch, dinner: d_dinner, snacks: d_snacks, water: Number(d_water), kcal: d_kcal, p: d_p, c: d_c, f: d_f, tags: d_tags };
                 const list = editingId ? activePlan.dietEntries.map(e => e.id === editingId ? entry : e) : [entry, ...(activePlan.dietEntries || [])];
                 await savePlanToCloud({ ...activePlan, dietEntries: list.sort((a,b) => new Date(b.date) - new Date(a.date)) });
-                closeModal(); setShowCelebration(true); setTimeout(() => setShowCelebration(false), 3000);
+                closeModal();
             };
 
             const handleSaveWorkout = async () => {
                 if (!activePlan) return;
-                const entry = { id: editingId || Date.now(), date: w_date, time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }), displayDate: `${parseInt(w_date.split('-')[1])}月${parseInt(w_date.split('-')[2])}日`, note: w_note, bodyParts: w_parts, apparatus: Array.from(new Set(w_exercises.map(ex => ex.category))), exercises: w_exercises, weight: parseFloat(w_weight) };
+                const entry = { id: editingId || Date.now(), date: w_date, time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }), parts: w_parts, exercises: w_exercises, weight: latestWeight, mood: w_mood };
                 const list = editingId ? (activePlan.workoutEntries || []).map(e => e.id === editingId ? entry : e) : [entry, ...(activePlan.workoutEntries || [])];
                 await savePlanToCloud({ ...activePlan, workoutEntries: list.sort((a,b) => new Date(b.date) - new Date(a.date)) });
-                closeModal(); setShowCelebration(true); setTimeout(() => setShowCelebration(false), 3000);
+                closeModal();
+            };
+
+            const handleCompleteRecommendation = async () => {
+                if (!activePlan) return;
+                const date = historyFilterDate;
+                const newEntry = { id: Date.now(), date: date, time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }), note: `補強打卡：${todayReinforcement.name}`, parts: ['核心'], exercises: [{ name: todayReinforcement.name, sets: '15x3', category: '墊上' }], weight: latestWeight, mood: 'good' };
+                await savePlanToCloud({ ...activePlan, workoutEntries: [newEntry, ...(activePlan.workoutEntries || [])].sort((a,b) => new Date(b.date) - new Date(a.date)) });
+                setShowCelebration(true);
+                setTimeout(() => setShowCelebration(false), 1500);
+            };
+
+            const renderTimeline = (entries, type) => {
+                const filtered = entries.filter(e => e.date === historyFilterDate);
+                if (filtered.length === 0) return <div className="py-20 text-center opacity-40 flex flex-col items-center gap-4 text-muted"><Icon name="calendar-range" size={48}/><p>這天還沒有相關紀錄喔</p></div>;
+                return filtered.map(entry => (
+                    <div key={entry.id} className="premium-card p-6 mb-4 active:scale-[0.98] transition-all relative overflow-hidden text-brand" onClick={() => type === 'workout' ? handleEditWorkout(entry) : handleEditDiet(entry)}>
+                        <div className="flex justify-between items-center mb-3">
+                            <div className="flex items-center gap-2">
+                                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-lg uppercase ${type==='workout'?'bg-orange-50 text-accent':'bg-ice text-brand'}`}>{type === 'workout' ? '訓練' : '飲食'}</span>
+                                {entry.mood && <span className="text-[14px]">{MOOD_OPTIONS.find(m => m.value === entry.mood)?.icon}</span>}
+                            </div>
+                            <span className="text-[11px] text-muted">{entry.time || '00:00'}</span>
+                        </div>
+                        {type === 'workout' ? (
+                            <div className="space-y-2">{entry.exercises?.map((ex, i) => (<div key={i} className="flex justify-between text-[14px] font-medium border-b border-gray-50 pb-1"><span>{ex.name}</span><span className="text-accent">{ex.sets}</span></div>))}</div>
+                        ) : (
+                            <div className="space-y-3">
+                                <div className="space-y-1">{['breakfast','lunch','dinner','snacks'].map(m => entry[m] && <p key={m} className="text-[14px] leading-relaxed text-brand"><span className="opacity-40 mr-2 text-brand">·</span>{entry[m]}</p>)}</div>
+                                <div className="flex flex-wrap gap-1 pt-2 border-t border-gray-50">
+                                    <span className="bg-blue-50 text-blue-500 text-[9px] font-bold px-2 py-0.5 rounded-full text-brand">P: {entry.p}g</span>
+                                    <span className="bg-red-50 text-red-400 text-[9px] font-black px-2 py-0.5 rounded-full text-brand">F: {entry.f}g</span>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                ));
             };
 
             const executeDelete = async () => {
                 if (!confirmDelete || !activePlan) return;
-                const { type, id } = confirmDelete;
-                if (type === 'plan') {
-                    await deleteDoc(doc(db, 'artifacts', currentAppId, 'users', user.uid, 'plans', id));
-                } else {
-                    const key = type === 'workout' ? 'workoutEntries' : 'dietEntries';
-                    const updatedList = activePlan[key].filter(e => e.id !== id);
-                    await savePlanToCloud({ ...activePlan, [key]: updatedList });
+                if (confirmDelete.type === 'plan') await deleteDoc(doc(db, 'artifacts', currentAppId, 'users', user.uid, 'plans', confirmDelete.id));
+                else {
+                    const key = confirmDelete.type === 'workout' ? 'workoutEntries' : 'dietEntries';
+                    const updated = activePlan[key].filter(e => e.id !== confirmDelete.id);
+                    await savePlanToCloud({ ...activePlan, [key]: updated });
                 }
                 setConfirmDelete(null);
             };
 
-            const closeModal = () => { setShowEntryModal(false); setShowPlanModal(false); setInlineAddingMeal(null); setEditingId(null); setWNote(''); setWParts([]); setWExercises([]); setDBreakfast(''); setDLunch(''); setDDinner(''); setDSnacks(''); setDWater(2000); setDTags([]); setNewPlanTitle(''); setNewPlanDate(''); setNewPlanTargetWeight(''); };
-            const handleQuickAddFood = (mealSetter, currentVal, foodName) => { mealSetter(`${currentVal}${currentVal.trim() ? '、' : ''}${foodName}`); };
-            const handleAddLabelInline = async (mealKey) => { if (!newLabelText.trim()) return; const updatedFoods = { ...commonFoods, [mealKey]: [...(commonFoods[mealKey] || []), newLabelText.trim()] }; setCommonFoods(updatedFoods); await setDoc(doc(db, 'artifacts', currentAppId, 'users', user.uid, 'settings', 'commonFoods'), updatedFoods); setNewLabelText(""); setInlineAddingMeal(null); };
-            const handleRemoveLabelInline = async (mealKey, labelIndex) => { const updatedFoods = { ...commonFoods, [mealKey]: commonFoods[mealKey].filter((_, i) => i !== labelIndex) }; setCommonFoods(updatedFoods); await setDoc(doc(db, 'artifacts', currentAppId, 'users', user.uid, 'settings', 'commonFoods'), updatedFoods); };
-            const handleEditWorkout = (entry) => { setEntryType('workout'); setEditingId(entry.id); setWNote(entry.note); setWParts(entry.bodyParts || []); setWExercises(entry.exercises || []); setWWeight(entry.weight?.toString() || '57.1'); setWDate(entry.date); setShowEntryModal(true); };
-            const handleEditDiet = (entry) => { setEntryType('diet'); setEditingId(entry.id); setDBreakfast(entry.breakfast || ''); setDLunch(entry.lunch || ''); setDDinner(entry.dinner || ''); setDSnacks(entry.snacks || ''); setDWater(entry.water || 2000); setDTags(entry.tags || []); setDDate(entry.date); setShowEntryModal(true); };
-
-            // --- Firebase 初始化 ---
+            // --- Effects ---
             useEffect(() => {
                 if (!isConfigReady) { setLoading(false); return; }
-                const initializeFirebase = async () => {
-                    try {
-                        const appInstance = initializeApp(firebaseConfig);
-                        const authInstance = getAuth(appInstance);
-                        const firestoreInstance = getFirestore(appInstance);
-                        setDb(firestoreInstance);
-                        if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) await signInWithCustomToken(authInstance, __initial_auth_token);
-                        else await signInAnonymously(authInstance);
-                        onAuthStateChanged(authInstance, (u) => { setUser(u); if (!u) setLoading(false); });
-                    } catch (e) { console.error(e); setLoading(false); }
+                const init = async () => {
+                    const appInst = initializeApp(firebaseConfig);
+                    const authInst = getAuth(appInst);
+                    const dbInst = getFirestore(appInst);
+                    setDb(dbInst);
+                    if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) await signInWithCustomToken(authInst, __initial_auth_token);
+                    else await signInAnonymously(authInst);
+                    onAuthStateChanged(authInst, u => { setUser(u); if(!u) setLoading(false); });
                 };
-                initializeFirebase();
+                init();
             }, []);
 
-            // --- 數據監聽 ---
             useEffect(() => {
                 if (!user || !db) return;
-                const plansRef = collection(db, 'artifacts', currentAppId, 'users', user.uid, 'plans');
-                const unsubPlans = onSnapshot(plansRef, (snap) => {
+                const unsub = onSnapshot(collection(db, 'artifacts', currentAppId, 'users', user.uid, 'plans'), snap => {
                     const list = snap.docs.map(d => ({ id: d.id, ...d.data() }));
                     setPlans(list.sort((a,b) => new Date(b.targetDate) - new Date(a.targetDate)));
                     setLoading(false);
                 }, () => setLoading(false));
-
-                const foodRef = doc(db, 'artifacts', currentAppId, 'users', user.uid, 'settings', 'commonFoods');
-                const unsubFoods = onSnapshot(foodRef, (docSnap) => {
-                    if (docSnap.exists()) setCommonFoods(docSnap.data());
-                    else setDoc(foodRef, DEFAULT_QUICK_FOODS);
-                });
-                return () => { unsubPlans(); unsubFoods(); };
+                return unsub;
             }, [user, db]);
 
-            // --- 時間軸渲染 ---
-            const renderTimeline = (entries, type) => {
-                let lastDate = "";
-                const filtered = historyFilterDate ? entries.filter(e => e.date === historyFilterDate) : entries;
-                return filtered.map((entry) => {
-                    const isNewDay = entry.date !== lastDate;
-                    lastDate = entry.date;
-                    const [y, m, d] = entry.date.split('-');
-                    return (
-                        <div key={entry.id} className="relative flex flex-col px-page">
-                            <div className="timeline-line"></div>
-                            {isNewDay && (
-                                <div className="flex items-center gap-3 py-4 z-10">
-                                    <div className="w-2.5 h-2.5 rounded-full bg-accent ring-4 ring-orange-100 shadow-[0_0_12px_rgba(249,153,26,0.3)]"></div>
-                                    <h4 className="text-[15px] font-bold text-brand tracking-tighter uppercase">{parseInt(m)}月{parseInt(d)}日 <span className="text-[10px] text-primary ml-1 opacity-50 font-normal">TIMELINE</span></h4>
-                                </div>
-                            )}
-                            <div className={`flex gap-4 ${isNewDay ? '' : 'pt-2'}`}>
-                                <div className="w-[10px] shrink-0"></div>
-                                <div className="flex-1 mb-6 bg-white rounded-kxl p-5 border border-primary/5 shadow-sm relative z-10 text-brand">
-                                    <div className="flex justify-between items-start mb-3">
-                                        <div className="flex items-center gap-2">
-                                            <div className="w-1.5 h-1.5 rounded-full bg-accent/30"></div>
-                                            <div className="flex items-center gap-1 text-[10px] font-bold text-primary opacity-60 bg-ingray px-2 py-0.5 rounded-kxl">
-                                                <Icon name="clock" size={10} /><span>{entry.time || '--:--'}</span>
-                                            </div>
-                                        </div>
-                                        <div className="flex items-center gap-1">
-                                            <button onClick={() => type === 'workout' ? handleEditWorkout(entry) : handleEditDiet(entry)} className="p-1.5 text-primary active:scale-90"><Icon name="edit-2" size={14} /></button>
-                                            <button onClick={() => setConfirmDelete({type, id: entry.id})} className="p-1.5 text-primary active:scale-90 hover:text-red-400"><Icon name="trash-2" size={14} /></button>
-                                        </div>
-                                    </div>
-                                    {type === 'workout' ? (
-                                        <div className="space-y-2">
-                                            {entry.exercises?.map((ex, i) => (<div key={i} className="flex justify-between items-center text-[14px]"><span className="font-medium text-brand">{ex.name}</span><span className="text-accent font-bold px-2 py-0.5 bg-orange-50 rounded-kxl text-[12px]">{ex.sets}</span></div>))}
-                                            {entry.note && <p className="text-[12px] text-gray-400 italic mt-2 pt-2 border-t border-gray-50">"{entry.note}"</p>}
-                                        </div>
-                                    ) : (
-                                        <div className="space-y-3">
-                                            <div className="flex flex-col gap-2 text-brand text-brand">
-                                                {entry.breakfast && <div className="flex items-start gap-3"><Icon name="coffee" size={14} className="mt-1 text-primary opacity-40"/><p className="text-[14px] leading-relaxed text-brand">{entry.breakfast}</p></div>}
-                                                {entry.lunch && <div className="flex items-start gap-3"><Icon name="sun" size={14} className="mt-1 text-primary opacity-40"/><p className="text-[14px] leading-relaxed text-brand">{entry.lunch}</p></div>}
-                                                {entry.dinner && <div className="flex items-start gap-3"><Icon name="moon" size={14} className="mt-1 text-primary opacity-40"/><p className="text-[14px] leading-relaxed text-brand">{entry.dinner}</p></div>}
-                                                {entry.snacks && <div className="flex items-start gap-3"><Icon name="cookie" size={14} className="mt-1 text-primary opacity-40"/><p className="text-[14px] opacity-60 leading-relaxed text-brand">{entry.snacks}</p></div>}
-                                            </div>
-                                            <div className="pt-2 border-t border-gray-50 flex justify-between items-center">
-                                                <div className="flex gap-1">{(entry.tags || []).map(t => <span key={t} className="text-[11px] font-bold text-primary opacity-60">#{t}</span>)}</div>
-                                                <div className="flex items-center gap-1 text-[11px] font-bold text-accent"><Icon name="droplets" size={12}/>{entry.water}cc</div>
-                                            </div>
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
-                        </div>
-                    );
-                });
-            };
-
-            if (loading) return <div className="h-full flex flex-col items-center justify-center bg-[#f9991a] text-white gap-4"><Icon name="loader-2" className="animate-spin" size={32} /><p className="text-[14px] font-bold uppercase tracking-widest text-brand">精修 App 邏輯中...</p></div>;
+            if (loading) return <div className="h-full flex flex-col items-center justify-center bg-[#fbfbfe] text-brand gap-4"><Icon name="loader-2" className="animate-spin text-accent" size={32} /><p className="text-[12px] font-bold uppercase tracking-widest text-brand">質感重塑中...</p></div>;
 
             return (
-                <div className={`h-full flex flex-col relative select-none transition-all duration-700 ${view === 'home' ? 'bg-dynamic-flow' : 'bg-[#fbfbfe]'}`}>
-                    {view === 'home' && (<><div className="energy-stream stream-1"></div><div className="energy-stream stream-2"></div></>)}
-
-                    {/* 彈窗：成就與刪除 */}
+                <div className={`h-full flex flex-col relative select-none transition-all duration-700 bg-dynamic-flow text-brand`}>
+                    
+                    {/* 成功特效層 */}
                     {showCelebration && (
-                        <div className="fixed inset-0 z-[300] flex items-center justify-center p-page animate-in fade-in zoom-in duration-300">
-                            <div className="absolute inset-0 bg-[#040316]/60 backdrop-blur-md" />
-                            <div className="w-full max-w-[300px] bg-white rounded-kxl p-8 flex flex-col items-center text-center relative z-10 shadow-2xl border border-white/20">
-                                <div className="w-20 h-20 bg-orange-100 rounded-full flex items-center justify-center mb-6 animate-bounce"><Icon name="trophy" size={48} className="text-accent" /></div>
-                                <h2 className="text-[22px] font-bold mb-2 text-brand">成就達成！✨</h2>
-                                <button onClick={() => setShowCelebration(false)} className="w-full h-[44px] bg-accent text-white rounded-kxl font-bold active:scale-95 transition-all shadow-lg">收下讚美</button>
-                            </div>
-                        </div>
-                    )}
-                    {confirmDelete && (
-                        <div className="fixed inset-0 z-[400] flex items-center justify-center p-page animate-in fade-in duration-200">
-                            <div className="absolute inset-0 bg-[#040316]/40 backdrop-blur-sm" />
-                            <div className="w-full max-w-[280px] bg-white rounded-kxl p-6 text-center z-10 shadow-2xl border border-primary/10">
-                                <Icon name="alert-circle" size={40} className="text-red-400 mx-auto mb-4" />
-                                <h3 className="text-[18px] font-bold text-brand mb-2">確定刪除嗎？</h3>
-                                <div className="flex gap-3 mt-6">
-                                    <button onClick={() => setConfirmDelete(null)} className="flex-1 h-[44px] bg-ingray rounded-kxl text-brand font-bold text-[14px]">取消</button>
-                                    <button onClick={executeDelete} className="flex-1 h-[44px] bg-red-500 text-white rounded-kxl font-bold text-[14px]">刪除</button>
-                                </div>
+                        <div className="fixed inset-0 z-[500] flex items-center justify-center pointer-events-none p-4">
+                            <div className="bg-white/90 backdrop-blur-xl rounded-[24px] p-8 flex flex-col items-center animate-in zoom-in duration-300 shadow-2xl border border-accent/20">
+                                <div className="w-16 h-16 bg-orange-100 rounded-full flex items-center justify-center mb-4 text-accent"><Icon name="check-circle" size={40} /></div>
+                                <h3 className="text-[20px] font-bold">紀錄成功！✨</h3>
                             </div>
                         </div>
                     )}
 
-                    {/* Header 44px */}
-                    <header className={`px-page h-[44px] shrink-0 sticky top-0 z-30 flex items-center transition-all duration-500 ${view === 'home' ? 'text-white' : 'text-brand bg-[#fbfbfe]/80 backdrop-blur-lg border-b border-primary/10'}`}>
+                    {/* Header: 首頁數據或 TopBar */}
+                    <header className="px-4 pt-4 pb-2 z-20 space-y-4 sticky top-0 bg-transparent">
                         {view === 'home' ? (
-                            <div className="flex items-center gap-2 w-full text-white">
-                                <div onClick={() => setView('home')} className="active:scale-95 transition-transform flex items-center gap-2 overflow-hidden flex-1">
-                                    <h1 className="text-[15px] font-bold tracking-tight truncate">{activePlan ? `${activePlan.title} | 剩餘 ${daysLeft} 天` : "開啟妳的蛻變之旅"}</h1>
-                                    <span className="text-[10px] font-medium opacity-80 whitespace-nowrap bg-white/20 px-2 py-0.5 rounded-full">今天也要閃耀動人 ✨</span>
-                                </div>
-                            </div>
-                        ) : (
-                            <div className="flex items-center justify-between w-full text-brand text-brand">
-                                <div className="flex items-center gap-3">
-                                    <button onClick={() => {setView('home'); setHistoryFilterDate("");}} className="active:scale-90 text-brand"><Icon name="chevron-left" size={20}/></button>
-                                    <h1 className="text-[16px] font-bold tracking-tight">{view === 'workout_history' ? '訓練時間軸' : view === 'diet_history' ? '飲食生活誌' : '計畫管理'}</h1>
-                                </div>
-                                {(view === 'workout_history' || view === 'diet_history') && (
-                                    <div className="relative">
-                                        <input type="date" value={historyFilterDate} onChange={(e) => setHistoryFilterDate(e.target.value)} className="!bg-transparent !p-0 w-8 h-8 opacity-0 absolute inset-0 z-20 cursor-pointer" />
-                                        <div className={`w-8 h-8 rounded-kxl flex items-center justify-center transition-all ${historyFilterDate ? 'bg-accent text-white shadow-md' : 'bg-ingray text-brand opacity-60'}`}><Icon name={historyFilterDate ? "filter-x" : "search"} size={16} /></div>
+                            <>
+                                <div className="flex justify-between items-start text-brand">
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-12 h-12 rounded-full border-2 border-white shadow-xl overflow-hidden"><img src="https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=100&h=100&fit=crop" alt="avatar" /></div>
+                                        <div className="flex flex-col text-brand text-brand">
+                                            <h2 className="text-[16px] font-bold leading-tight mb-1 text-brand">你好, Emma 👋</h2>
+                                            {activePlan && latestWeight ? (
+                                                <div className="flex items-baseline gap-3 text-brand text-brand">
+                                                    <span className="text-[18px] font-black tracking-tighter text-brand">{latestWeight}kg</span>
+                                                    <div className="flex items-center gap-2 text-[14px] text-muted font-medium text-brand">
+                                                        <span>起始 {activePlan.baselineWeight}kg</span>
+                                                        <span className="opacity-20 text-brand">|</span>
+                                                        <span className="text-accent font-bold text-brand">目標 {activePlan.targetWeight}kg</span>
+                                                    </div>
+                                                </div>
+                                            ) : (
+                                                <p className="text-[14px] text-muted font-medium">開始建立妳的目標計畫吧！✨</p>
+                                            )}
+                                        </div>
                                     </div>
-                                )}
+                                    <div className="text-right text-brand">
+                                        <p className="text-[10px] font-black text-muted uppercase tracking-widest mb-0.5 text-brand">剩餘天數</p>
+                                        <p className="text-[20px] font-black tracking-tight leading-none text-brand">{daysLeft}</p>
+                                    </div>
+                                </div>
+
+                                <div 
+                                    className="bg-white/20 backdrop-blur-md border border-white/20 rounded-[16px] pt-3 px-4 pb-3 shadow-sm text-brand text-brand"
+                                    onTouchStart={handleTouchStart}
+                                    onTouchEnd={handleTouchEnd}
+                                >
+                                    <div className="flex justify-between items-center mb-2 px-1 text-brand text-brand">
+                                        <span className="text-[11px] font-bold text-label uppercase tracking-widest text-brand">
+                                            {weekDaysList[0].month}月 {weekOffset === 0 ? '本週' : weekOffset === -1 ? '上週' : `${Math.abs(weekOffset)}週前`}
+                                        </span>
+                                        <div className="flex gap-2 text-brand">
+                                            <button onClick={() => setWeekOffset(v => v - 1)} className="p-1 text-muted active:scale-90 text-brand"><Icon name="chevron-left" size={16}/></button>
+                                            <button onClick={() => setWeekOffset(v => v + 1)} className="p-1 text-muted active:scale-90 text-brand" disabled={weekOffset >= 0} style={{opacity: weekOffset >= 0 ? 0.2 : 1}}><Icon name="chevron-right" size={16}/></button>
+                                        </div>
+                                    </div>
+                                    <div className="flex justify-between items-center px-1 text-brand">
+                                        {weekDaysList.map(day => {
+                                            const { workout, diet } = dateStats(day.date);
+                                            const isSelected = historyFilterDate === day.date;
+                                            const isFullyDone = workout && diet;
+                                            return (
+                                                <div key={day.date} className="flex flex-col items-center gap-1.5 text-brand">
+                                                    <span className="text-[10px] font-bold text-muted uppercase tracking-widest text-brand">{day.label}</span>
+                                                    <button 
+                                                        onClick={() => setHistoryFilterDate(day.date)} 
+                                                        className={`calendar-circle ${isFullyDone ? 'fully-completed text-white' : isSelected ? 'selected-border text-accent bg-white/60' : 'bg-[#e9f1fb]/60 text-[#9caeba]'}`}
+                                                    >
+                                                        {day.num}
+                                                        {(workout || diet) && !isFullyDone && <div className="data-indicator-dot text-brand" />}
+                                                    </button>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+                            </>
+                        ) : (
+                            <div className="flex items-center h-[44px] px-4 bg-white/20 backdrop-blur-xl rounded-[16px] border border-white/20 text-brand">
+                                <h1 className="text-[18px] font-black text-brand tracking-tight">
+                                    {view === 'workout_history' && "訓練日誌"}
+                                    {view === 'diet_history' && "飲食紀錄"}
+                                    {view === 'plan_manage' && "計畫管理"}
+                                </h1>
                             </div>
                         )}
                     </header>
 
-                    <main className="flex-1 overflow-y-auto py-6 space-y-4 no-scrollbar pb-[120px] text-brand z-10">
+                    <main className="flex-1 overflow-y-auto px-4 no-scrollbar pb-[140px] z-10 text-brand">
                         {view === 'home' ? (
-                            <div className="px-page space-y-4">
+                            <div className="space-y-4">
                                 {activePlan ? (
                                     <>
-                                        <section className="bg-white/90 backdrop-blur-md rounded-kxl p-5 space-y-5 shadow-sm text-brand">
-                                            <h3 className="text-[16px] font-bold uppercase tracking-widest opacity-80 text-brand">數據儀表板</h3>
-                                            <div className="flex items-center justify-between">
-                                                <div className="space-y-1"><p className="text-[12px] font-medium text-primary uppercase">當前體重</p><p className="text-[28px] font-bold tracking-tighter leading-none text-brand text-brand">{latestWeight} <span className="text-[14px] font-normal opacity-60 text-brand">kg</span></p></div>
-                                                <div className="text-right space-y-1 text-brand text-brand"><p className="text-[12px] font-medium text-primary uppercase">距離目標</p><p className="text-[28px] font-bold text-accent tracking-tighter leading-none text-brand">{(latestWeight - (activePlan?.targetWeight || 0)).toFixed(1)} <span className="text-[14px] font-normal opacity-60">kg</span></p></div>
-                                            </div>
-                                            <div className="w-full h-3 bg-secondary rounded-full overflow-hidden border border-primary/5 shadow-inner"><div className="h-full bg-accent animate-progress" style={{ width: `${activePlan ? Math.max(10, Math.min(100, (1 - (latestWeight - activePlan.targetWeight) / (activePlan.baselineWeight - activePlan.targetWeight || 1)) * 100)) : 0}%` }} /></div>
-                                        </section>
-                                        <section className={`bg-white/90 backdrop-blur-md rounded-kxl border border-white/20 shadow-sm transition-all duration-500 overflow-hidden ${isReinforcementDoneToday ? 'p-0' : 'p-5'}`}>
-                                            {isReinforcementDoneToday ? (
-                                                <div className="p-10 flex flex-col items-center text-center space-y-5 animate-in fade-in zoom-in duration-500 text-brand text-brand text-brand text-brand text-brand">
-                                                    <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center text-green-500 shadow-sm"><Icon name="party-popper" size={32} /></div>
-                                                    <h3 className="text-[22px] font-bold mb-2">妳今天超棒的！💃</h3>
-                                                    <button onClick={() => {setIsExtraChallengeMode(true); setIsReinforcementDoneToday(false);}} className="premium-shine w-full h-[44px] bg-gradient-to-r from-brand to-[#5a7da0] text-white rounded-kxl font-bold active:scale-95 transition-all shadow-lg">
-                                                        <Icon name="zap" size={16} /> 挑戰進階版？
-                                                    </button>
-                                                </div>
-                                            ) : (
-                                                <div className="space-y-6 animate-in slide-in-from-bottom-2 text-brand">
-                                                    <div className="space-y-3">
-                                                        <div className="flex justify-between items-center text-brand text-brand text-brand text-brand"><h3 className="text-[16px] font-bold uppercase tracking-widest opacity-80 text-brand">今日補強建議</h3>{isExtraChallengeMode && <span className="bg-brand text-white text-[10px] font-bold px-3 py-1 rounded-kxl uppercase tracking-widest">ADVANCED</span>}</div>
-                                                        <div className="bg-white/60 border border-accent/10 p-5 rounded-kxl space-y-2 text-brand text-brand text-brand text-brand">
-                                                            <h2 className="text-[24px] font-bold leading-tight">{todayReinforcement.name}</h2>
-                                                            <p className="text-gray-500 text-[14px] font-medium italic">“{todayReinforcement.desc}”</p>
-                                                        </div>
-                                                    </div>
-                                                    <div className="space-y-2 text-brand text-brand text-brand">
-                                                        <p className="text-[13px] font-bold uppercase tracking-widest opacity-60 ml-1">執行目標</p>
-                                                        <div className="flex items-center gap-3 text-brand">
-                                                            <div className="flex-1 flex items-center bg-ingray rounded-kxl px-4 h-[40px] shadow-inner">
-                                                                <Icon name="list-checks" size={16} className="text-primary mr-2" />
-                                                                <input value={customSets} onChange={(e) => setCustomSets(e.target.value)} className="w-full bg-transparent outline-none !p-0 font-bold h-full" placeholder={`建議: ${todayReinforcement.sets}`} />
-                                                            </div>
-                                                            <a href={`https://www.youtube.com/results?search_query=皮拉提斯+${todayReinforcement.name.split(' (')[0]}`} target="_blank" rel="noreferrer" className="w-12 h-[40px] bg-white border border-primary/10 rounded-kxl flex items-center justify-center text-red-500 active:scale-90 shadow-sm text-brand text-brand"><Icon name="youtube" size={24} /></a>
-                                                        </div>
-                                                    </div>
-                                                    <button onClick={handleCompleteRecommendation} className="w-full h-[44px] bg-accent text-white rounded-kxl font-bold shadow-lg active:scale-95 transition-all text-[16px] shadow-orange-100"><Icon name="check-circle" size={20} /> 打卡完成</button>
-                                                </div>
-                                            )}
-                                        </section>
+                                      {/* 修改：晨間稱重單行化並加入確認按鈕特效 */}
+                                      <section className="premium-card p-4 border border-accent/10 flex items-center justify-between text-brand bg-white/60 backdrop-blur-sm">
+                                          <div className="flex items-center gap-4 flex-1">
+                                              <div className="w-10 h-10 rounded-xl bg-orange-50 flex items-center justify-center text-accent shadow-inner"><Icon name="scale" size={20} /></div>
+                                              <div className="flex-1">
+                                                  <p className="text-[11px] font-bold text-label uppercase tracking-widest mb-0.5">晨間稱重紀錄</p>
+                                                  <div className="flex items-baseline">
+                                                      <input 
+                                                          type="number" 
+                                                          step="0.1" 
+                                                          placeholder={latestWeight || '---'} 
+                                                          value={w_weight}
+                                                          onChange={(e) => setWWeight(e.target.value)} 
+                                                          className="bg-transparent !p-0 !h-[32px] w-24 text-[22px] font-black tracking-tight outline-none text-brand border-none" 
+                                                      />
+                                                      <span className="text-[12px] font-bold text-muted ml-1">kg</span>
+                                                  </div>
+                                              </div>
+                                          </div>
+                                          <button 
+                                              onClick={() => handleUpdateWeightOnHome(w_weight)}
+                                              className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all ${weightSavedEffect ? 'bg-accent text-white btn-success-anim' : 'bg-ice text-accent active:scale-90'}`}
+                                          >
+                                              <Icon name={weightSavedEffect ? "check" : "save"} size={20} />
+                                          </button>
+                                      </section>
+
+                                      <section className="bg-gradient-to-br from-[#a2d53b] to-[#14b8a6] p-6 rounded-[16px] shadow-xl relative overflow-hidden group active:scale-[0.98] transition-all">
+                                          <div className="absolute -right-4 -bottom-4 opacity-10 rotate-12 transition-transform group-hover:scale-110 text-white"><Icon name="trophy" size={120} /></div>
+                                          <div className="flex justify-between items-start text-white text-brand">
+                                              <div>
+                                                  <div className="bg-white/20 backdrop-blur-md rounded-full px-3 py-1 text-[10px] font-black mb-3 inline-block uppercase tracking-widest text-white text-brand">今日補強重點</div>
+                                                  <h2 className="text-[20px] font-black leading-tight mb-1.5 text-white">{todayReinforcement.name}</h2>
+                                                  <p className="opacity-90 text-[13px] leading-relaxed pr-6 line-clamp-2 text-white">{todayReinforcement.desc}</p>
+                                              </div>
+                                              <button onClick={handleCompleteRecommendation} className="w-12 h-12 bg-white rounded-[16px] flex items-center justify-center text-[#14b8a6] shadow-xl active:scale-90 transition-all font-black text-[12px] uppercase tracking-widest">開始</button>
+                                          </div>
+                                      </section>
+
+                                      <div className="grid grid-cols-2 gap-4 text-brand text-brand">
+                                          <button onClick={() => setView('workout_history')} className="premium-card p-5 flex flex-col items-center gap-3 active:scale-95 transition-all text-brand">
+                                              <div className="w-12 h-12 rounded-[16px] bg-orange-50 flex items-center justify-center text-accent shadow-inner"><Icon name="dumbbell" size={24}/></div>
+                                              <div className="text-center text-brand">
+                                                  <p className="text-[14px] font-black">訓練日誌</p>
+                                                  <div className={`mt-1 px-3 py-0.5 rounded-full text-[10px] font-bold ${workoutLogsCount > 0 ? 'bg-orange-100 text-accent' : 'bg-gray-100 text-muted'}`}>今日 {workoutLogsCount} 筆</div>
+                                              </div>
+                                          </button>
+                                          <button onClick={() => setView('diet_history')} className="premium-card p-5 flex flex-col items-center gap-3 active:scale-95 transition-all text-brand">
+                                              <div className="w-12 h-12 rounded-[16px] bg-blue-50 flex items-center justify-center text-brand shadow-inner text-brand"><Icon name="utensils" size={24}/></div>
+                                              <div className="text-center text-brand">
+                                                  <p className="text-[14px] font-black">飲食紀錄</p>
+                                                  <div className={`mt-1 px-3 py-0.5 rounded-full text-[10px] font-bold ${dietLogsCount > 0 ? 'bg-blue-100 text-brand' : 'bg-gray-100 text-muted'}`}>今日 {dietLogsCount} 筆</div>
+                                              </div>
+                                          </button>
+                                      </div>
                                     </>
                                 ) : (
-                                    <section onClick={() => setShowPlanModal(true)} className="bg-white/90 backdrop-blur-md rounded-kxl p-10 border-dashed border-2 border-white/40 flex flex-col items-center justify-center gap-4 cursor-pointer text-brand"><Icon name="flag" size={32} className="text-accent text-brand" /><h2 className="text-[20px] font-bold text-brand">啟動計畫見證改變</h2><button className="mt-4 px-8 h-[44px] bg-accent text-white rounded-kxl text-[14px] font-bold shadow-orange-100 shadow-lg text-brand">立即設定目標</button></section>
+                                    <section onClick={() => setShowPlanModal(true)} className="premium-card p-10 flex flex-col items-center justify-center gap-6 bg-white/60 backdrop-blur-sm border-2 border-dashed border-muted/30 active:scale-[0.98] transition-all text-brand text-brand">
+                                        <div className="w-16 h-16 bg-accent/10 rounded-full flex items-center justify-center text-accent text-brand"><Icon name="flag" size={32} /></div>
+                                        <div className="text-center space-y-2 text-brand">
+                                            <h2 className="text-[18px] font-black text-brand">歡迎來到 K-Glow ✨</h2>
+                                            <p className="text-[13px] text-muted px-4 text-brand">請先設定妳的體重目標，讓我們陪伴妳一起變美變強！</p>
+                                        </div>
+                                        <button className="h-[44px] px-8 bg-brand text-white rounded-[16px] font-black shadow-lg transition-all text-white text-brand">建立第一份計畫</button>
+                                    </section>
                                 )}
-                                <div className="grid grid-cols-2 gap-4">
-                                    <button onClick={() => setView('workout_history')} className="bg-white/90 backdrop-blur-md rounded-kxl p-5 flex flex-col items-center gap-3 active:scale-95 transition-all shadow-sm text-brand">
-                                        <div className="w-12 h-12 rounded-kxl bg-accent/10 flex items-center justify-center text-accent border border-accent/20"><Icon name="dumbbell" size={24}/></div>
-                                        <p className="text-[16px] font-bold uppercase">訓練紀錄</p><p className="text-[14px] text-accent font-bold">{activePlan?.workoutEntries?.length || 0} 筆</p>
-                                    </button>
-                                    <button onClick={() => setView('diet_history')} className="bg-white/90 backdrop-blur-md rounded-kxl p-5 flex flex-col items-center gap-3 active:scale-95 transition-all shadow-sm text-brand">
-                                        <div className="w-12 h-12 rounded-kxl bg-accent/10 flex items-center justify-center text-accent border border-accent/20 text-brand text-brand text-brand"><Icon name="utensils" size={24}/></div>
-                                        <p className="text-[16px] font-bold uppercase text-brand">飲食日誌</p><p className="text-[14px] text-accent font-bold">{activePlan?.dietEntries?.length || 0} 筆</p>
-                                    </button>
-                                </div>
                             </div>
                         ) : (
-                            <section className="space-y-4 pb-12 animate-in fade-in duration-500 text-brand text-brand">
+                            <div className="space-y-6 text-brand">
                                 {view === 'plan_manage' ? (
-                                    <div className="px-page space-y-4 text-brand">
-                                        <button onClick={() => {setEditingId(null); setShowPlanModal(true);}} className="w-full py-8 bg-white rounded-kxl border-2 border-dashed border-primary/30 text-primary flex flex-col items-center gap-2 active:scale-95 transition-all shadow-sm text-brand text-brand"><Icon name="plus" size={32} className="text-accent"/><span className="font-bold text-[16px] uppercase tracking-widest text-brand">新增目標計畫</span></button>
+                                    <div className="space-y-4">
+                                        <button onClick={() => setShowPlanModal(true)} className="w-full h-[44px] bg-[#e9f1fb] rounded-[16px] border-2 border-dashed border-muted/30 flex items-center justify-center gap-2 active:scale-95 text-brand text-brand">
+                                            <Icon name="plus" size={20} className="text-accent"/><span className="font-black text-[14px] uppercase tracking-widest text-brand">建立目標計畫</span>
+                                        </button>
                                         {plans.map(p => (
-                                            <div key={p.id} className={`bg-white rounded-kxl border transition-all overflow-hidden shadow-sm ${activePlanId === p.id ? 'border-accent border-2 shadow-lg' : 'border-primary/30'}`}>
-                                                <div className="px-5 pt-5 pb-3 flex justify-between items-start relative text-brand text-brand">
-                                                    <div className="flex items-center gap-2 pr-16 text-brand"><h3 className="text-[16px] font-bold leading-tight truncate">{p.title}</h3>{activePlanId === p.id && <span className="bg-[#ffeb3b] text-brand text-[10px] font-bold px-2 py-0.5 rounded-kxl uppercase whitespace-nowrap">執行中</span>}</div>
-                                                    <button onClick={() => setConfirmDelete({type:'plan', id: p.id})} className="p-2 text-primary opacity-40 active:scale-90 absolute right-4 top-4 hover:text-red-400 text-brand text-brand text-brand text-brand text-brand text-brand"><Icon name="trash-2" size={18}/></button>
+                                            <div key={p.id} className={`premium-card p-6 border-l-8 ${activePlanId === p.id ? 'border-accent shadow-lg' : 'border-muted/20'} text-brand`}>
+                                                <div className="flex justify-between items-start mb-4 text-brand text-brand text-brand">
+                                                    <div><h3 className="text-[17px] font-black tracking-tight text-brand">{p.title}</h3><p className="text-[11px] font-bold text-muted text-brand">{p.targetDate} 止</p></div>
+                                                    <button onClick={() => { setConfirmDelete({type:'plan', id: p.id}); }} className="p-2 text-red-200 active:scale-90 text-brand text-brand"><Icon name="trash-2" size={18}/></button>
                                                 </div>
-                                                <div className="px-5 pb-5 space-y-4 text-brand">
-                                                    <div className="bg-secondary/40 rounded-kxl p-3 grid grid-cols-2 gap-2 border border-primary/10">
-                                                        <div className="flex flex-col gap-1 border-r border-primary/10 text-brand text-brand text-brand"><span className="text-[10px] font-bold text-primary uppercase">目標體重</span><div className="flex items-center gap-1.5"><Icon name="target" size={14} className="text-accent" /><span className="text-[15px] font-bold text-brand">{p.targetWeight} <span className="text-[10px] opacity-60">KG</span></span></div></div>
-                                                        <div className="flex flex-col gap-1 pl-2 text-brand text-brand"><span className="text-[10px] font-bold text-primary uppercase text-brand">截止日期</span><div className="flex items-center gap-1.5 text-brand text-brand text-brand"><Icon name="calendar" size={14} className="text-primary" /><span className="text-[15px] font-bold text-brand">{p.targetDate.split('-').slice(1).join('/')}</span></div></div>
-                                                    </div>
-                                                    {activePlanId !== p.id && (<button onClick={() => {setActivePlanId(p.id); setView('home');}} className="w-full h-[44px] bg-brand text-white rounded-kxl text-[14px] font-bold active:scale-95 mt-2 shadow-md">啟動計畫</button>)}
-                                                </div>
+                                                {activePlanId !== p.id && <button onClick={() => {setActivePlanId(p.id); setView('home');}} className="w-full h-[44px] bg-brand text-white rounded-xl font-black text-[12px] active:scale-95 transition-all shadow-lg text-white text-brand">啟動計畫</button>}
                                             </div>
                                         ))}
                                     </div>
-                                ) : renderTimeline(view === 'workout_history' ? activePlan?.workoutEntries || [] : activePlan?.dietEntries || [], view === 'workout_history' ? 'workout' : 'diet')}
-                            </section>
+                                ) : (
+                                    <div className="text-brand">
+                                        {view === 'diet_history' && (
+                                            <div className="space-y-4 mb-8 text-brand text-brand text-brand">
+                                                <h3 className="text-[18px] font-black ml-1 tracking-tight text-brand">飲食營養概況</h3>
+                                                <div className="flex gap-4 overflow-x-auto no-scrollbar px-1 pb-4 text-brand">
+                                                    <div className="nutrition-card text-white text-brand">
+                                                        <Icon name="flame" size={24} className="text-red-500" fill="#ef4444" />
+                                                        <div><p className="text-[11px] font-black opacity-60 uppercase mb-1 text-white text-brand">熱量</p><p className="text-[20px] font-black text-white text-brand">{historyTotals.kcal}<span className="text-[10px] ml-1 text-brand text-brand">Kcal</span></p></div>
+                                                    </div>
+                                                    <div className="nutrition-card text-white text-brand">
+                                                        <Icon name="dna" size={24} className="text-blue-400" fill="#60a5fa" />
+                                                        <div><p className="text-[11px] font-black opacity-60 uppercase mb-1 text-white text-brand">蛋白質</p><p className="text-[20px] font-black text-white text-brand">{historyTotals.p}<span className="text-[10px] ml-1 text-white text-brand">g</span></p></div>
+                                                    </div>
+                                                    <div className="nutrition-card text-white text-brand text-brand">
+                                                        <Icon name="droplet" size={24} className="text-yellow-400" fill="#fbbf24" />
+                                                        <div><p className="text-[11px] font-black opacity-60 uppercase mb-1 text-white text-brand">脂肪</p><p className="text-[20px] font-black text-white text-white text-brand">{historyTotals.f}<span className="text-[10px] ml-1 text-white text-white text-brand">g</span></p></div>
+                                                    </div>
+                                                </div>
+                                                <div className="bg-ice rounded-3xl p-5 border border-[#9caeba]/20 shadow-sm text-brand text-brand text-brand">
+                                                    <p className="text-[14px] font-bold leading-relaxed italic text-[#040316]/70 text-brand">「{nutrientInsight}」</p>
+                                                </div>
+                                            </div>
+                                        )}
+                                        <div className="flex items-center gap-2 px-1 py-4 text-muted uppercase font-black tracking-widest text-[12px] text-brand text-brand"><Icon name="calendar" size={16}/>{historyFilterDate} {view === 'workout_history' ? '訓練歷史' : '飲食紀錄'}</div>
+                                        {renderTimeline(view === 'workout_history' ? activePlan?.workoutEntries || [] : activePlan?.dietEntries || [], view === 'workout_history' ? 'workout' : 'diet')}
+                                    </div>
+                                )}
+                            </div>
                         )}
                     </main>
 
-                    {/* Toolbar 字級 14px & 間距 16px */}
-                    <nav className="absolute bottom-[16px] left-[16px] right-[16px] h-[72px] glass rounded-kxl shadow-2xl border border-white/20 flex justify-around items-center px-4 z-40 text-brand text-brand">
-                        <button onClick={() => setView('home')} className={`flex flex-col items-center gap-1 transition-all ${view === 'home' ? 'text-accent scale-110' : 'text-brand/70 active:scale-95'}`}><Icon name="home" size={22} fill={view === 'home' ? 'currentColor' : 'none'} /><span className="text-[14px] font-bold">首頁</span></button>
-                        <button onClick={() => setView('workout_history')} className={`flex flex-col items-center gap-1 transition-all ${view === 'workout_history' ? 'text-accent scale-110' : 'text-brand/70 active:scale-95'}`}><Icon name="dumbbell" size={22} /><span className="text-[14px] font-bold">訓練</span></button>
-                        <button onClick={() => { setEntryType('diet'); setEditingId(null); setShowEntryModal(true); }} className="mx-2 bg-accent w-12 h-12 rounded-kxl flex items-center justify-center text-white shadow-lg active:scale-90 transition-all -translate-y-4 border-2 border-white shadow-orange-100"><Icon name="plus" size={28} /></button>
-                        <button onClick={() => setView('diet_history')} className={`flex flex-col items-center gap-1 transition-all ${view === 'diet_history' ? 'text-accent scale-110' : 'text-brand/70 active:scale-95'}`}><Icon name="utensils" size={22} /><span className="text-[14px] font-bold">飲食</span></button>
-                        <button onClick={() => setView('plan_manage')} className={`flex flex-col items-center gap-1 transition-all ${view === 'plan_manage' ? 'text-accent scale-110' : 'text-brand/70 active:scale-95'}`}><Icon name="clipboard" size={22} /><span className="text-[14px] font-bold">計畫</span></button>
+                    {/* 島嶼導覽列 */}
+                    <nav className="island-navbar">
+                        <div className="flex flex-1 justify-around items-center text-brand">
+                            <button onClick={() => setView('home')} className={`flex flex-col items-center gap-1 transition-all ${view === 'home' ? 'text-accent scale-110' : 'text-muted opacity-40'}`}><Icon name="home" size={22} fill={view === 'home' ? 'currentColor' : 'none'} /><span className="text-[9px] font-black uppercase tracking-widest text-brand text-brand">首頁</span></button>
+                            <button onClick={() => setView('workout_history')} className={`flex flex-col items-center gap-1 transition-all ${view === 'workout_history' ? 'text-accent scale-110' : 'text-muted opacity-40'}`}><Icon name="activity" size={22} /><span className="text-[9px] font-black uppercase tracking-widest text-brand text-brand">紀錄</span></button>
+                        </div>
+                        <div className="px-2 text-brand">
+                            <button onClick={() => {setEntryType('workout'); setEditingId(null); setShowEntryModal(true);}} className="glow-action-btn text-brand text-brand">GO!</button>
+                        </div>
+                        <div className="flex flex-1 justify-around items-center text-brand">
+                            <button onClick={() => setView('diet_history')} className={`flex flex-col items-center gap-1 transition-all ${view === 'diet_history' ? 'text-accent scale-110' : 'text-muted opacity-40'}`}><Icon name="utensils" size={22} /><span className="text-[9px] font-black uppercase tracking-widest text-brand">飲食</span></button>
+                            <button onClick={() => setView('plan_manage')} className={`flex flex-col items-center gap-1 transition-all ${view === 'plan_manage' ? 'text-accent scale-110' : 'text-muted opacity-40'}`}><Icon name="clipboard" size={22} /><span className="text-[9px] font-black uppercase tracking-widest text-brand text-brand">計畫</span></button>
+                        </div>
                     </nav>
 
-                    {/* Entry Modal: 底部固定按鈕 + 右上角 X */}
+                    {/* Entry Modal - 選中活力橘 75% Height */}
                     {showEntryModal && (
-                        <div className="absolute inset-0 z-[110] flex items-end animate-in fade-in duration-300 text-brand">
-                            <div className="absolute inset-0 bg-[#040316]/20 backdrop-blur-[4px]" onClick={closeModal} />
-                            <div className="w-full bg-white rounded-t-kxl h-[85vh] z-10 flex flex-col animate-in slide-in-from-bottom-full duration-500 shadow-2xl overflow-hidden text-brand">
-                                <header className="px-6 h-[56px] border-b border-primary/5 flex justify-between items-center bg-white sticky top-0 z-20 text-brand">
-                                    <div className="flex bg-ingray p-1 rounded-kxl text-brand text-brand text-brand"><button onClick={() => setEntryType('workout')} className={`px-8 h-[32px] rounded-kxl text-[12px] font-medium transition-all ${entryType === 'workout' ? 'bg-white text-brand shadow-sm' : 'text-primary'}`}>運動</button><button onClick={() => setEntryType('diet')} className={`px-8 h-[32px] rounded-kxl text-[12px] font-medium transition-all ${entryType === 'diet' ? 'bg-white text-brand shadow-sm' : 'text-primary'}`}>飲食</button></div>
-                                    <button onClick={closeModal} className="p-2 text-primary active:scale-90 hover:text-brand"><Icon name="x" size={24}/></button>
+                        <div className="absolute inset-0 z-[100] flex items-end animate-in fade-in duration-300 text-brand">
+                            <div className="absolute inset-0 bg-[#040316]/30 backdrop-blur-sm" onClick={closeModal} />
+                            <div className="w-full bg-white rounded-t-[16px] h-[75vh] z-10 flex flex-col animate-in slide-in-from-bottom-full duration-500 shadow-2xl overflow-hidden border-t border-white text-brand text-brand">
+                                <header className="h-[44px] px-4 border-b border-gray-50 flex justify-between items-center bg-white sticky top-0 z-20 text-brand">
+                                    <div className="w-10"></div>
+                                    <div className="flex bg-gray-100 p-1 rounded-[16px] text-brand">
+                                        <button onClick={() => setEntryType('workout')} className={`px-8 h-[28px] rounded-[12px] text-[12px] font-black transition-all ${entryType === 'workout' ? 'bg-white text-brand shadow-sm' : 'text-muted'}`}>運動</button>
+                                        <button onClick={() => setEntryType('diet')} className={`px-8 h-[28px] rounded-[12px] text-[12px] font-black transition-all ${entryType === 'diet' ? 'bg-white text-brand shadow-sm' : 'text-muted'}`}>飲食</button>
+                                    </div>
+                                    <button onClick={closeModal} className="text-muted active:scale-90 p-2 text-brand"><Icon name="x" size={20}/></button>
                                 </header>
-                                <div className="flex-1 overflow-y-auto px-6 pt-6 pb-[100px] space-y-8 no-scrollbar text-brand text-brand">
-                                    <div className="space-y-2 text-brand text-brand text-brand"><p className="text-[16px] font-bold uppercase tracking-widest ml-1">紀錄日期</p><div className="date-input-container shadow-sm"><input type="date" value={entryType==='workout'?w_date:d_date} onChange={e=>entryType==='workout'?setWDate(e.target.value):setDDate(e.target.value)} className="w-full bg-transparent font-bold text-accent outline-none h-full text-brand text-brand" /><div className="absolute right-4 pointer-events-none opacity-40 text-brand text-brand"><Icon name="calendar" size={18}/></div></div></div>
-                                    {entryType === 'diet' && (
-                                        <div className="space-y-2 text-brand">
-                                            <p className="text-[16px] font-bold uppercase tracking-widest ml-1 text-brand">每日飲水</p>
-                                            <div className="bg-ingray rounded-kxl p-5 flex items-center justify-between shadow-inner text-brand">
-                                                <div className="flex items-center gap-4 text-brand text-brand"><Icon name="droplets" size={24} className="text-accent" /><div className="flex items-center text-brand text-brand"><input type="number" value={d_water} onChange={e=>setDWater(e.target.value === '' ? '' : Number(e.target.value))} className="w-20 bg-transparent text-[28px] font-bold outline-none !p-0" /><span className="text-[14px] font-bold text-primary ml-1">cc</span></div></div>
-                                                <div className="flex gap-2 text-brand">
-                                                    <button onClick={()=>setDWater(Math.max(0,(Number(d_water)||0)-250))} className="w-11 h-[40px] bg-white border border-primary/10 rounded-kxl flex items-center justify-center text-xl active:scale-90 text-brand">-</button>
-                                                    <button onClick={()=>setDWater((Number(d_water)||0)+250)} className="w-11 h-11 bg-accent rounded-kxl flex items-center justify-center text-white text-xl active:scale-90 shadow-md shadow-orange-100 text-brand">+</button>
+                                <div className="flex-1 overflow-y-auto p-4 space-y-[24px] no-scrollbar pb-32 text-brand">
+                                    <div className="space-y-[12px] text-brand text-brand text-brand">
+                                        <p className="text-[16px] font-bold text-label uppercase tracking-widest text-brand">紀錄日期</p>
+                                        <div className="bg-gray-100 rounded-[16px] px-[12px] h-[40px] flex items-center text-brand text-brand"><input type="date" value={entryType==='workout'?w_date:d_date} onChange={e=>entryType==='workout'?setWDate(e.target.value):setDDate(e.target.value)} className="w-full font-bold text-accent bg-transparent outline-none !px-0 text-brand" /></div>
+                                    </div>
+                                    
+                                    {entryType === 'workout' ? (
+                                        <div className="space-y-[24px] text-brand text-brand">
+                                            <div className="space-y-[12px] text-brand text-brand text-brand text-brand"><p className="text-[16px] font-bold text-label uppercase tracking-widest text-brand">訓練心情</p><div className="flex justify-between gap-3 text-brand">{MOOD_OPTIONS.map(m => (<button key={m.value} onClick={()=>setWMood(m.value)} className={`flex-1 flex flex-col items-center justify-center h-[72px] rounded-[16px] border-2 transition-all ${w_mood === m.value ? 'bg-accent text-white border-accent shadow-xl shadow-orange-100' : 'bg-white border-gray-100 text-muted'}`}><span className="text-[20px] mb-1">{m.icon}</span><span className="text-[9px] font-black uppercase text-brand text-brand">{m.label}</span></button>))}</div></div>
+                                            <div className="space-y-[12px] text-brand text-brand text-brand text-brand text-brand"><p className="text-[16px] font-bold text-label uppercase tracking-widest text-brand text-brand">訓練部位</p><div className="flex gap-3 flex-wrap text-brand">{BODY_PARTS.map(p => <button key={p} onClick={() => setWParts(v => v.includes(p) ? v.filter(i=>i!==p) : [...v,p])} className={`px-5 h-[44px] rounded-[16px] text-[14px] font-black border-2 transition-all ${w_parts.includes(p) ? 'bg-accent text-white border-accent shadow-lg' : 'bg-white border-gray-100 text-muted'}`}>{p}</button>)}</div></div>
+                                            <div className="space-y-[12px] text-brand text-brand text-brand">
+                                                <p className="text-[16px] font-bold text-label uppercase tracking-widest text-brand">動作選擇</p>
+                                                <div className="bg-gray-50 rounded-[16px] p-5 space-y-5 border border-gray-100 text-brand">
+                                                    {Object.keys(EXERCISE_LIBRARY).map(t => (<div key={t} className="space-y-3 text-brand text-brand text-brand"><p className="text-[10px] font-black opacity-30 uppercase tracking-[2px] text-brand">{t}</p><div className="grid grid-cols-1 gap-2.5 text-brand">{EXERCISE_LIBRARY[t].map(ex => { 
+                                                        const idx = w_exercises.findIndex(i => i.name === ex.name && i.category === t); const active = idx !== -1;
+                                                        return (<div key={ex.name} className={`premium-card p-4 transition-all ${active ? 'border-accent bg-white shadow-md' : 'opacity-70 bg-white/50'} text-brand`} onClick={() => active ? setWExercises(v=>v.filter(i=>!(i.name===ex.name && i.category===t))) : setWExercises([...w_exercises, { name: ex.name, sets: '15x3', category: t }])}><div className="flex justify-between items-center text-brand text-brand text-brand text-brand text-brand text-brand"><div className="flex items-center gap-3 text-brand text-brand text-brand"><div className={`w-9 h-9 rounded-[12px] flex items-center justify-center transition-all ${active ? 'bg-accent text-white shadow-md' : 'bg-gray-100'}`}>{active ? <Icon name="check" size={18}/> : <Icon name="plus" size={18}/>}</div><p className="text-[14px] font-black text-brand text-brand">{ex.name}</p></div><Icon name="youtube" size={18} className="text-red-400" onClick={(e)=>{e.stopPropagation(); window.open(`https://www.youtube.com/results?search_query=pilates+${ex.name.split(' (')[0]}`, '_blank');}} /></div>{active && <input type="text" value={w_exercises[idx].sets} onChange={e=>setWExercises(w_exercises.map((item, i) => i === idx ? {...item, sets: e.target.value} : item))} onClick={e=>e.stopPropagation()} className="mt-3 !bg-gray-100 !h-[40px] text-[13px] font-black rounded-[12px] !px-[12px] text-brand text-brand" placeholder="設定組組數" />}</div>)
+                                                    })}</div></div>))}
                                                 </div>
                                             </div>
+                                            <div className="space-y-[12px] text-brand text-brand text-brand"><p className="text-[16px] font-bold text-label uppercase tracking-widest text-brand">訓練筆記</p><textarea value={w_note} onChange={e=>setWNote(e.target.value)} className="w-full h-32 bg-ingray rounded-[16px] p-[12px] text-[14px] border-none outline-none resize-none text-brand text-brand" placeholder="記錄今天的感受..." /></div>
+                                        </div>
+                                    ) : (
+                                        <div className="space-y-[24px] text-brand text-brand text-brand">
+                                            <div className="flex items-center justify-between premium-card p-6 bg-blue-50 border-none text-brand">
+                                                <div className="flex items-center gap-4 text-brand text-brand"><Icon name="droplets" size={28} className="text-accent" /><div className="flex items-baseline text-brand"><input type="number" value={d_water} onChange={e=>setDWater(e.target.value)} className="w-24 bg-transparent text-[36px] font-black tracking-tighter outline-none !px-[12px] text-brand text-brand" /><span className="text-[14px] font-black text-muted ml-1 text-brand">cc</span></div></div>
+                                                <div className="flex gap-3 text-brand text-brand"><button onClick={()=>setDWater(Math.max(0,Number(d_water)-250))} className="w-11 h-11 bg-white rounded-full border border-gray-200 shadow-sm active:scale-90 font-black text-brand">-</button><button onClick={()=>setDWater(Number(d_water)+250)} className="w-11 h-11 bg-accent text-white rounded-full shadow-md active:scale-90 font-black text-brand">+</button></div>
+                                            </div>
+                                            {['breakfast', 'lunch', 'dinner', 'snacks'].map(meal => {
+                                                const setters = { breakfast: setDBreakfast, lunch: setDLunch, dinner: setDDinner, snacks: setDSnacks };
+                                                const vals = { breakfast: d_breakfast, lunch: d_lunch, dinner: d_dinner, snacks: d_snacks };
+                                                const mealNames = { breakfast: '早餐', lunch: '午餐', dinner: '晚餐', snacks: '點心' };
+                                                return (<div key={meal} className="space-y-[12px] text-brand text-brand text-brand"><p className="text-[16px] font-bold text-label uppercase tracking-widest text-brand">{mealNames[meal]}</p><textarea value={vals[meal]} onChange={e=>setters[meal](e.target.value)} className="w-full h-24 shadow-none bg-gray-50 rounded-[16px] p-[12px] text-brand text-brand" placeholder="紀錄內容..." /></div>)
+                                            })}
+                                            <div className="space-y-[12px] text-brand text-brand"><p className="text-[16px] font-bold text-label uppercase tracking-widest text-brand">飲食標籤</p><div className="flex gap-3 flex-wrap text-brand">{DIET_TAGS.map(t => <button key={t} onClick={()=>setDTags(prev => prev.includes(t) ? prev.filter(x=>x!==t) : [...prev, t])} className={`px-5 h-[44px] rounded-[16px] text-[14px] font-black border-2 transition-all text-brand ${d_tags.includes(t) ? 'bg-accent text-white border-accent shadow-md shadow-orange-100' : 'bg-white border-gray-100 text-muted'}`}>{t}</button>)}</div></div>
                                         </div>
                                     )}
-                                    {entryType === 'workout' ? (
-                                        <>
-                                            <div className="space-y-2 text-brand text-brand text-brand"><p className="text-[16px] font-bold uppercase tracking-widest ml-1 text-brand">當前體重</p><div className="flex items-center bg-ingray rounded-kxl px-4 h-[40px] shadow-inner text-brand"><input type="number" step="0.1" value={w_weight} onChange={e=>setWWeight(e.target.value)} className="w-full bg-transparent font-bold outline-none !p-0 h-full text-brand" /><span className="text-[12px] font-bold opacity-30 ml-2">KG</span></div></div>
-                                            <div className="space-y-2 text-brand text-brand text-brand"><p className="text-[16px] font-bold uppercase tracking-widest ml-1 text-brand">訓練部位</p><div className="flex gap-2 flex-wrap text-brand">{BODY_PARTS.map(p => <button key={p} onClick={() => setWParts(v => v.includes(p) ? v.filter(i=>i!==p) : [...v,p])} className={`px-5 h-[40px] rounded-kxl text-[14px] font-bold border transition-all ${w_parts.includes(p) ? 'bg-brand text-white border-brand shadow-md' : 'bg-white border-gray-200 text-primary'}`}>{p}</button>)}</div></div>
-                                            <div className="space-y-2 text-brand text-brand">
-                                                <p className="text-[16px] font-bold uppercase tracking-widest ml-1 text-brand">動作內容</p>
-                                                <div className="bg-ingray/50 rounded-kxl p-4 space-y-4 border border-primary/5 shadow-inner text-brand">
-                                                    <div className="flex overflow-x-auto no-scrollbar gap-2 flex-nowrap pb-2 text-brand text-brand">
-                                                        {Object.keys(EXERCISE_LIBRARY).map(t => (<button key={t} onClick={() => setWApparatus(t)} className={`px-4 h-[40px] rounded-kxl text-[12px] font-bold border transition-all whitespace-nowrap ${w_apparatus === t ? 'bg-brand text-white shadow-md' : 'bg-white border-gray-200 text-primary'}`}>{t}</button>))}
-                                                    </div>
-                                                    <div className="grid grid-cols-1 gap-3 pt-2 text-brand">
-                                                        {EXERCISE_LIBRARY[w_apparatus]?.map(ex => { 
-                                                            const idx = w_exercises.findIndex(i => i.name === ex.name && i.category === w_apparatus); 
-                                                            const active = idx !== -1; 
-                                                            return (
-                                                                <div key={ex.name} className={`bg-white rounded-kxl border p-3 flex flex-col gap-2 transition-all ${active ? 'border-accent shadow-sm' : 'border-primary/5'}`} onClick={() => active ? setWExercises(v=>v.filter((_,i)=>i!==idx)) : setWExercises([...w_exercises, { name: ex.name, sets: '', category: w_apparatus }])}>
-                                                                    <div className="flex justify-between items-center text-brand text-brand text-brand text-brand text-brand">
-                                                                        <div className="flex items-center gap-3"><div className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all ${active ? 'bg-accent text-white' : 'bg-ingray text-primary'}`}>{active ? <Icon name="check" size={16}/> : <Icon name="plus" size={16}/>}</div><span className="font-bold text-[14px] text-brand">{ex.name}</span></div>
-                                                                        <a href={`https://www.youtube.com/results?search_query=皮拉提斯+${ex.name.split(' (')[0]}`} target="_blank" rel="noreferrer" className="p-2 text-red-500 active:scale-90 text-brand text-brand text-brand"><Icon name="youtube" size={18}/></a>
-                                                                    </div>
-                                                                    {active && <input type="text" placeholder="設定組數" value={w_exercises[idx].sets} onChange={e=>{const val=e.target.value; setWExercises(prev=>prev.map((it,i)=>i===idx?{...it,sets:val}:it))}} onClick={e=>e.stopPropagation()} className="!bg-ingray rounded-kxl px-3 h-[40px] text-[12px] outline-none border-none mt-1 text-brand text-brand text-brand" />}
-                                                                </div>
-                                                            );
-                                                        })}
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            <div className="space-y-2 text-brand text-brand"><p className="text-[16px] font-bold uppercase tracking-widest ml-1 text-brand">訓練筆記</p><textarea value={w_note} onChange={e=>setWNote(e.target.value)} className="w-full h-32 bg-ingray rounded-kxl p-4 text-[14px] outline-none shadow-inner focus:ring-2 focus:ring-orange-100 resize-none text-brand text-brand" placeholder="記錄今天的身體感受..." /></div>
-                                        </>
-                                    ) : (
-                                        <>
-                                            {['breakfast', 'lunch', 'dinner', 'snacks'].map((meal) => (
-                                                <div key={meal} className="space-y-3 text-brand text-brand text-brand">
-                                                    <p className="text-[16px] font-bold uppercase tracking-widest ml-1 text-brand text-brand">{meal === 'breakfast' ? '早餐' : meal === 'lunch' ? '午餐' : meal === 'dinner' ? '晚餐' : '點心'}</p>
-                                                    <textarea value={meal==='breakfast'?d_breakfast:meal==='lunch'?d_lunch:meal==='dinner'?d_dinner:d_snacks} onChange={(e)=>meal==='breakfast'?setDBreakfast(e.target.value):meal==='lunch'?setDLunch(e.target.value):meal==='dinner'?setDDinner(e.target.value):setDSnacks(e.target.value)} className="w-full bg-ingray rounded-kxl p-4 text-[14px] shadow-inner focus:ring-2 focus:ring-orange-100 min-h-[80px] resize-none text-brand text-brand" placeholder="點擊紀錄..." />
-                                                    <div className="flex flex-wrap gap-2 items-center text-brand">
-                                                        {commonFoods[meal]?.map((food, idx) => (<button key={idx} onClick={()=>handleQuickAddFood(meal==='breakfast'?setDBreakfast:meal==='lunch'?setDLunch:meal==='dinner'?setDDinner:setDSnacks, meal==='breakfast'?d_breakfast:meal==='lunch'?d_lunch:meal==='dinner'?d_dinner:d_snacks, food)} className="option-tag h-[36px]">{food}<span className="text-[10px] opacity-20 ml-1" onClick={(e)=>{e.stopPropagation(); handleRemoveLabelInline(meal, idx);}}>✕</span></button>))}
-                                                        {inlineAddingMeal === meal ? (<div className="flex gap-1 animate-in slide-in-from-left-2 duration-200 text-brand text-brand text-brand text-brand"><input autoFocus value={newLabelText} onChange={(e) => setNewLabelText(e.target.value)} onBlur={()=>!newLabelText && setInlineAddingMeal(null)} onKeyDown={(e)=>e.key==='Enter' && handleAddLabelInline(meal)} className="w-24 !bg-white border border-accent rounded-kxl px-2 h-[36px] outline-none !p-1 text-brand text-brand" placeholder="標籤" /><button onClick={()=>handleAddLabelInline(meal)} className="p-1 bg-accent text-white rounded-kxl h-[36px] w-[36px] flex items-center justify-center text-brand text-brand"><Icon name="check" size={14}/></button><button onClick={()=>setInlineAddingMeal(null)} className="p-1 bg-gray-100 text-gray-400 rounded-kxl h-[36px] w-[36px] flex items-center justify-center text-brand text-brand"><Icon name="x" size={14}/></button></div>) : (<button onClick={()=>setInlineAddingMeal(meal)} className="p-2 border border-dashed border-gray-300 rounded-kxl text-primary text-[12px] flex items-center gap-1 active:scale-95 h-[36px] text-brand">新增</button>)}
-                                                    </div>
-                                                </div>
-                                            ))}
-                                            <div className="space-y-2 text-brand text-brand"><p className="text-[16px] font-bold uppercase tracking-widest ml-1 text-brand">飲食標籤</p><div className="flex gap-2 flex-wrap">{DIET_TAGS.map(t => <button key={t} onClick={()=>setDTags(v=>v.includes(t)?v.filter(i=>i!==t):[...v,t])} className={`px-4 h-[40px] rounded-kxl text-[12px] font-bold border transition-all ${d_tags.includes(t)?'bg-brand text-white border-brand shadow-md' : 'bg-white border-gray-200 text-primary'}`}>{t}</button>)}</div></div>
-                                        </>
-                                    )}
                                 </div>
-                                <div className="absolute bottom-0 left-0 right-0 p-page bg-white/80 backdrop-blur-md border-t border-primary/5 pb-8 z-30">
-                                    <button onClick={entryType==='workout'?handleSaveWorkout:handleSaveDiet} disabled={entryType==='workout'?!isWorkoutValid:!isDietValid} className="w-full h-[44px] bg-accent text-white rounded-kxl font-bold shadow-lg active:scale-95 transition-all text-[16px] shadow-orange-100 text-brand">{editingId ? '確認並更新' : '儲存紀錄'}</button>
+                                <div className="absolute bottom-0 left-0 right-0 p-4 bg-white/90 backdrop-blur-md border-t border-gray-100 pb-12 z-30 text-brand">
+                                    <button onClick={entryType === 'workout' ? handleSaveWorkout : handleSaveDiet} disabled={!activePlan || (entryType === 'diet' ? !isDietValid : !isWorkoutValid)} className={`w-full h-[44px] rounded-[16px] text-white font-black text-[16px] shadow-lg active:scale-95 transition-all text-white disabled:opacity-30 ${entryType === 'workout' ? 'bg-accent shadow-orange-200' : 'bg-brand'}`}>儲存今日紀錄</button>
                                 </div>
                             </div>
                         </div>
                     )}
 
-                    {/* New Plan Modal: Bottom Sheet 回歸 + 16px 圓角與尺寸校準 */}
+                    {/* New Plan Modal */}
                     {showPlanModal && (
                         <div className="absolute inset-0 z-[120] flex items-end animate-in fade-in duration-300 text-brand">
-                            <div className="absolute inset-0 bg-[#040316]/40 backdrop-blur-sm" onClick={() => setShowPlanModal(false)} />
-                            <div className="w-full bg-white rounded-t-kxl h-[85vh] z-10 flex flex-col animate-in slide-in-from-bottom-full duration-500 shadow-2xl border-t border-primary/20 overflow-hidden text-brand text-brand text-brand text-brand">
-                                <header className="px-6 h-[56px] border-b border-primary/5 flex justify-between items-center bg-white sticky top-0 z-20 text-brand">
+                            <div className="absolute inset-0 bg-[#040316]/30 backdrop-blur-sm" onClick={() => setShowPlanModal(false)} />
+                            <div className="w-full bg-white rounded-t-[16px] h-[75vh] z-10 flex flex-col animate-in slide-in-from-bottom-full duration-500 shadow-2xl overflow-hidden border-t border-white text-brand text-brand">
+                                <header className="h-[44px] px-6 border-b border-gray-50 flex justify-between items-center bg-white text-brand">
                                     <div className="w-10"></div>
-                                    <h3 className="text-[18px] font-bold text-brand">設定新衝刺目標</h3>
-                                    <button onClick={() => setShowPlanModal(false)} className="p-2 text-primary active:scale-90 hover:text-brand text-brand"><Icon name="x" size={24}/></button>
+                                    <h3 className="text-[17px] font-black tracking-tight text-brand">啟動新計畫</h3>
+                                    <button onClick={() => setShowPlanModal(false)} className="p-2 text-muted active:scale-90 text-brand"><Icon name="x" size={20}/></button>
                                 </header>
-                                <div className="flex-1 overflow-y-auto px-6 pt-6 pb-[100px] space-y-8 no-scrollbar text-brand text-brand text-brand text-brand">
-                                    <div className="space-y-2 text-brand">
-                                        <p className="text-[16px] font-bold uppercase tracking-widest ml-1 text-brand">達成日期</p>
-                                        <div className="date-input-container shadow-sm text-brand text-brand">
-                                            <input type="date" value={newPlanDate} onChange={e=>setNewPlanDate(e.target.value)} className="w-full bg-transparent font-bold text-accent outline-none h-full text-brand" />
-                                            <div className="absolute right-4 text-accent pointer-events-none opacity-40 text-brand text-brand"><Icon name="calendar" size={20} /></div>
-                                        </div>
-                                        <div className="flex gap-2 pt-1 text-brand">
-                                            {[7, 14, 30].map(d => <button key={d} onClick={() => handleSetPresetDate(d)} className="px-4 h-[36px] bg-white border border-gray-200 rounded-kxl text-[12px] font-bold active:scale-95 text-brand text-brand">{d}天</button>)}
+                                
+                                <div className="flex-1 overflow-y-auto p-6 space-y-[24px] no-scrollbar pb-44 text-brand">
+                                    <div className="space-y-[12px] text-brand text-brand"><p className="text-[16px] font-bold text-label uppercase tracking-widest text-brand">計畫名稱</p><input value={newPlanTitle} onChange={e=>setNewPlanTitle(e.target.value)} className="w-full !bg-gray-100 h-[40px] rounded-[16px] !px-[12px] font-bold text-brand" placeholder="例如：首爾 14 天衝刺" /></div>
+                                    <div className="space-y-[12px] text-brand text-brand text-brand">
+                                        <p className="text-[16px] font-bold text-label uppercase tracking-widest text-brand">目標日期</p>
+                                        <div className="bg-gray-100 rounded-[16px] px-[12px] shadow-none h-[40px] flex items-center text-brand text-brand"><input type="date" value={newPlanDate} onChange={e=>setNewPlanDate(e.target.value)} className="w-full font-bold text-accent bg-transparent outline-none !px-0 text-brand" /></div>
+                                        <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1 text-brand">
+                                            {[7, 14, 30, 90].map(days => (
+                                                <button key={days} onClick={() => handleSetQuickDate(days)} className="quick-period-btn text-brand">
+                                                    {days}天
+                                                </button>
+                                            ))}
                                         </div>
                                     </div>
-                                    <div className="space-y-2 text-brand text-brand text-brand">
-                                        <p className="text-[16px] font-bold uppercase tracking-widest ml-1 text-brand">計畫名稱</p>
-                                        <input value={newPlanTitle} onChange={e=>setNewPlanTitle(e.target.value)} className="w-full h-[40px] bg-ingray rounded-kxl px-4 outline-none shadow-inner text-brand" placeholder="例如：韓國 14 天衝刺" />
-                                    </div>
-                                    <div className="space-y-2 text-brand text-brand text-brand text-brand text-brand">
-                                        <p className="text-[16px] font-bold uppercase tracking-widest ml-1 text-brand">目標體重</p>
-                                        <div className="flex items-center bg-ingray rounded-kxl px-4 h-[40px] shadow-inner text-brand text-brand">
-                                            <input type="number" step="0.1" value={newPlanTargetWeight} onChange={e=>setNewPlanTargetWeight(e.target.value)} className="w-full bg-transparent outline-none font-bold h-full text-brand" placeholder="54.0" />
-                                            <span className="text-[12px] font-bold opacity-30 ml-2">KG</span>
-                                        </div>
+                                    <div className="grid grid-cols-2 gap-4 text-brand text-brand">
+                                        <div className="space-y-[12px] text-brand text-brand text-brand"><p className="text-[16px] font-bold text-label uppercase tracking-widest text-brand">起始體重 (kg)</p><input type="number" step="0.1" value={newPlanBaselineWeight} onChange={e=>setNewPlanBaselineWeight(e.target.value)} className="w-full !bg-gray-100 h-[40px] rounded-[16px] !px-[12px] font-black text-[22px] tracking-tighter text-brand" placeholder="57.0" /></div>
+                                        <div className="space-y-[12px] text-brand text-brand text-brand text-brand"><p className="text-[16px] font-bold text-label uppercase tracking-widest text-brand">目標體重 (kg)</p><input type="number" step="0.1" value={newPlanTargetWeight} onChange={e=>setNewPlanTargetWeight(e.target.value)} className="w-full !bg-gray-100 h-[40px] rounded-[16px] !px-[12px] font-black text-accent text-[22px] tracking-tighter text-brand" placeholder="54.0" /></div>
                                     </div>
                                 </div>
-                                <div className="absolute bottom-0 left-0 right-0 p-page bg-white/80 backdrop-blur-md border-t border-primary/5 pb-8 z-30">
-                                    <button onClick={handleCreatePlan} disabled={!newPlanTitle || !newPlanDate} className="w-full h-[44px] bg-accent text-white rounded-kxl font-bold shadow-lg shadow-orange-100 active:scale-95 transition-all text-brand">啟動計畫</button>
+                                <div className="absolute bottom-0 left-0 right-0 p-6 bg-white/95 backdrop-blur-md border-t border-gray-100 pb-10 z-30 text-brand">
+                                    <div className="flex gap-4 text-brand text-brand">
+                                        <button onClick={() => setShowPlanModal(false)} className="flex-1 h-[44px] bg-gray-50 border border-gray-200 rounded-[16px] text-muted font-bold active:scale-95 text-brand">取消</button>
+                                        <button onClick={handleCreatePlan} disabled={!newPlanTitle || !newPlanDate} className="flex-1 h-[44px] bg-accent text-white rounded-[16px] font-black shadow-lg active:scale-95 transition-all text-white text-brand">立即啟動</button>
+                                    </div>
                                 </div>
                             </div>
                         </div>
