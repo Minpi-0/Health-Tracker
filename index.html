@@ -21,7 +21,7 @@
             --accent-color: #f9991a; 
             --gray-blue: #5a6a7a;
             --muted-gray: #9caeba;
-            --radius-sheet: 16px; /* 要求：圓角為 16px */
+            --radius-sheet: 16px;
             --ice-blue: rgba(233, 241, 251, 0.5);
         }
 
@@ -100,7 +100,7 @@
         .sheet-content {
             position: relative; z-index: 1010; width: 100%; max-width: 430px; background: white;
             border-top-left-radius: var(--radius-sheet); border-top-right-radius: var(--radius-sheet); 
-            height: 75vh; /* 要求：高度 75% */
+            height: 75vh; 
             display: flex; flex-direction: column; pointer-events: auto; animation: slide-up 0.35s cubic-bezier(0.16, 1, 0.3, 1);
             overflow: hidden;
         }
@@ -131,7 +131,7 @@
     <div id="root"></div>
 
     <script type="module">
-        // 修復：模組環境下的 React 識別
+        // 模組環境識別
         const React = window.React;
         const ReactDOM = window.ReactDOM;
         const { useState, useMemo, useEffect, useRef } = React;
@@ -140,7 +140,7 @@
         import { getAuth, onAuthStateChanged, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, setDoc, getDoc, collection, query, onSnapshot, addDoc, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // --- 貼上妳的 Firebase Config 在這裡 ---
+        // --- Firebase Config 區塊 ---
         const myFirebaseConfig = {
             apiKey: "AIzaSyBpCw2-cfSDaE0ABznkvULKD9sxgjlR9OI", // 例如: "AIzaSy..."
             authDomain: "health-tracker-ed193.firebaseapp.com",
@@ -150,14 +150,13 @@
             appId: "1:77615585267:web:451f6672cc9834dc92a486"
         };
 
-        // Firebase 初始化
         const firebaseConfig = myFirebaseConfig.apiKey ? myFirebaseConfig : (typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : { apiKey: "" });
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'k-glow-tracker';
 
-        // --- 重要：清理資料以防 Firebase 報錯 ---
+        // --- 重要：Firestore 資料安全轉換 (防止 undefined 導致崩潰) ---
         const safeData = (obj) => {
             const clean = (o) => {
                 const newObj = Array.isArray(o) ? [] : {};
@@ -176,7 +175,7 @@
             return clean(obj);
         };
 
-        // --- Icon 元件 ---
+        // --- UI 元件 ---
         const Icon = ({ name, size = 24, className = "" }) => {
             const wrapperRef = useRef(null);
             useEffect(() => {
@@ -195,12 +194,13 @@
           "墊上 / 梯桶 (MAT / BARREL)": ["一百次呼吸", "捲身上揚", "單腿伸展", "天鵝跳水", "騎馬式"]
         };
         const DAILY_REINFORCEMENTS = [
-          { name: '死蟲式', sets: 3, reps: 12, explanation: '穩定深層核心基礎。' },
-          { name: '貓牛式', sets: 3, reps: 15, explanation: '釋放脊椎壓力，舒展肌肉。' },
-          { name: '鳥狗式', sets: 3, reps: 10, explanation: '建立對側平衡，改善體態。' }
+          { name: '死蟲式', sets: 3, reps: 12, explanation: '穩定深層核心基礎。', advanced: '進階挑戰：抬起對側時維持平衡停留 5 秒，20次x3組' },
+          { name: '貓牛式', sets: 3, reps: 15, explanation: '釋放脊椎壓力，舒展肌肉。', advanced: '進階挑戰：配合呼吸在動作頂端停留，加入對側延展，15次x3組' },
+          { name: '鳥狗式', sets: 3, reps: 10, explanation: '建立對側平衡，改善體態。', advanced: '進階挑戰：保持背部水平，加入 1KG 負重手足抬起，15次x3組' }
         ];
 
         const App = () => {
+            // --- 狀態管理 ---
             const [user, setUser] = useState(null);
             const [view, setView] = useState('home');
             const [plans, setPlans] = useState([]);
@@ -213,14 +213,7 @@
             const [historyFilterDate, setHistoryFilterDate] = useState(new Date().toISOString().split('T')[0]);
             const [weekOffset, setWeekOffset] = useState(0);
 
-            // 自訂快捷食物
-            const [quickFoods, setQuickFoods] = useState({ 
-                breakfast: ["荷包蛋", "地瓜", "無糖豆漿"], lunch: ["雞胸肉", "健康餐盒", "沙拉"], 
-                dinner: ["燙青菜", "煎豆腐", "糙米飯"], snacks: ["堅果", "優格", "蛋白飲"]
-            });
-            const [customFoodInput, setCustomFoodInput] = useState({ breakfast: '', lunch: '', dinner: '', snacks: '' });
-
-            // 紀錄表單
+            // 紀錄表單數據
             const [editingId, setEditingId] = useState(null);
             const [w_date, setWDate] = useState(new Date().toISOString().split('T')[0]);
             const [d_date, setDDate] = useState(new Date().toISOString().split('T')[0]);
@@ -234,15 +227,23 @@
             const [dietForm, setDietForm] = useState({ breakfast: '', lunch: '', dinner: '', snacks: '' });
             const [d_water, setDWater] = useState(200);
             const [isSaving, setIsSaving] = useState(false);
+            const [prefAdvanced, setPrefAdvanced] = useState(false);
 
-            // 計畫表單
+            // 計畫表單數據
             const [editingPlanId, setEditingPlanId] = useState(null);
             const [newPlanTitle, setNewPlanTitle] = useState('');
             const [newPlanDate, setNewPlanDate] = useState('');
             const [newPlanBaselineWeight, setNewPlanBaselineWeight] = useState('');
             const [newPlanTargetWeight, setNewPlanTargetWeight] = useState('');
 
-            // --- 功能與輔助函式 ---
+            // 快速食物數據
+            const [quickFoods, setQuickFoods] = useState({ 
+                breakfast: ["荷包蛋", "地瓜", "無糖豆漿"], lunch: ["雞胸肉", "健康餐盒", "沙拉"], 
+                dinner: ["燙青菜", "煎豆腐", "糙米飯"], snacks: ["堅果", "優格", "蛋白飲"]
+            });
+            const [customFoodInput, setCustomFoodInput] = useState({ breakfast: '', lunch: '', dinner: '', snacks: '' });
+
+            // --- 重要：功能函式 (解決 ReferenceError) ---
             const closeModal = () => { 
                 setShowEntryModal(false); setShowPlanModal(false); setEditingPlanId(null); setEditingId(null);
                 setWNote(''); setWExercises([]); setWParts([]); setDietForm({ breakfast: '', lunch: '', dinner: '', snacks: '' });
@@ -268,6 +269,11 @@
                 setDietForm(p => ({ ...p, [meal]: p[meal] ? p[meal] + "、" + food : food }));
             };
 
+            const watchYoutube = (name, isAdvanced = false) => {
+                const query = isAdvanced ? `${name}+advanced+pilates` : `${name}+pilates+tutorial`;
+                window.open(`https://www.youtube.com/results?search_query=${encodeURIComponent(query)}`, '_blank');
+            };
+
             const handleEditRecord = (entry, type) => {
                 setEntryType(type); setEditingId(entry.id);
                 if (type === 'workout') { setWDate(entry.date); setWParts(entry.parts || []); setWExercises(entry.exercises || []); setWNote(entry.note || ''); }
@@ -277,7 +283,6 @@
 
             const handleAddExercise = (name) => setWExercises(p => p.some(e => e.name === name) ? p.filter(e => e.name !== name) : [...p, { name, sets: 3, reps: 12 }]);
             const updateEx = (name, field, delta) => setWExercises(p => p.map(ex => ex.name === name ? { ...ex, [field]: Math.max(1, ex[field] + delta) } : ex));
-            const watchYoutube = (name) => window.open(`https://www.youtube.com/results?search_query=${encodeURIComponent(name)}+pilates+tutorial`, '_blank');
             const handleEditPlan = (plan) => { setEditingPlanId(plan.id); setNewPlanTitle(plan.title); setNewPlanDate(plan.targetDate); setNewPlanBaselineWeight(plan.baselineWeight); setNewPlanTargetWeight(plan.targetWeight); setShowPlanModal(true); };
 
             // --- 運算邏輯 ---
@@ -336,15 +341,17 @@
 
             const latestWeight = useMemo(() => activePlan?.workoutEntries?.find(e => e.weight > 0)?.weight || activePlan?.baselineWeight || 0, [activePlan]);
 
+            const todayReinforcement = useMemo(() => DAILY_REINFORCEMENTS[new Date(historyFilterDate).getDate() % DAILY_REINFORCEMENTS.length || 0], [historyFilterDate]);
+            const isTodayChallengeDone = useMemo(() => activePlan?.workoutEntries?.some(e => e.date === historyFilterDate && e.note?.includes('[今日挑戰]')), [activePlan, historyFilterDate]);
+            const isTodayAdvancedDone = useMemo(() => activePlan?.workoutEntries?.some(e => e.date === historyFilterDate && e.note?.includes('[進階挑戰]')), [activePlan, historyFilterDate]);
+
             const nutrientInsight = useMemo(() => {
                 const t = getDayDietTotals(historyFilterDate);
                 if (t.kcal === 0) return "今天還沒有紀錄飲食喔 ✨";
                 return t.p > 60 ? "蛋白質充足！肌肉正在感謝妳！💪" : "比例不錯喔！繼續朝目標邁進！🌟";
             }, [activePlan, historyFilterDate, plans, activePlanId]);
 
-            const todayReinforcement = useMemo(() => DAILY_REINFORCEMENTS[new Date(historyFilterDate).getDate() % DAILY_REINFORCEMENTS.length || 0], [historyFilterDate]);
-
-            // --- 異步交互 ---
+            // --- Firebase 異步與雲端保存 ---
             const executeDelete = async () => {
                 if (!user || !confirmAction) return;
                 const { type, id, extra } = confirmAction;
@@ -404,15 +411,26 @@
                 closeModal();
             };
 
+            const handleQuickChallengeClockIn = async (isAdvanced) => {
+                if (!user || !activePlan) return;
+                const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                const entry = {
+                    id: Date.now(),
+                    date: historyFilterDate,
+                    time: time,
+                    parts: ['全身流動'],
+                    exercises: [{ name: todayReinforcement.name, sets: 3, reps: isAdvanced ? 20 : 12 }],
+                    note: isAdvanced ? '[進階挑戰] 今日已達成進階挑戰！🔥' : '[今日挑戰] 今日已達成基礎挑戰！✨',
+                    weight: latestWeight
+                };
+                const updatedPlan = { ...activePlan, workoutEntries: [entry, ...(activePlan.workoutEntries || [])] };
+                await updateDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'plans', activePlan.id), safeData(updatedPlan));
+            };
+
             const handleCreatePlan = async () => {
                 if (!user || !newPlanTitle || !newPlanDate) return;
                 setIsSaving(true);
-                const planData = { 
-                    title: newPlanTitle, targetDate: newPlanDate, 
-                    baselineWeight: parseFloat(newPlanBaselineWeight) || 0, 
-                    targetWeight: parseFloat(newPlanTargetWeight) || 0, 
-                    workoutEntries: [], dietEntries: [] 
-                };
+                const planData = { title: newPlanTitle, targetDate: newPlanDate, baselineWeight: parseFloat(newPlanBaselineWeight) || 0, targetWeight: parseFloat(newPlanTargetWeight) || 0, workoutEntries: [], dietEntries: [] };
                 if (editingPlanId) {
                     await updateDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'plans', editingPlanId), safeData(planData));
                 } else {
@@ -433,7 +451,7 @@
                 setTimeout(() => { setConfirmAnim(false); setIsEditingWeight(false); }, 800);
             };
 
-            // --- Auth & Sync ---
+            // --- Auth & Data Listeners ---
             useEffect(() => {
                 const initAuth = async () => {
                     if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) { await signInWithCustomToken(auth, __initial_auth_token); } 
@@ -452,7 +470,7 @@
                 return () => { unsubPlans(); unsubSettings(); };
             }, [user]);
 
-            // --- 渲染卡片組件 ---
+            // --- 渲染卡片 (由運算產出 UI) ---
             const renderDietCardComponent = (entry) => {
                 const totalMacros = (entry.p || 0) + (entry.f || 0) + (entry.c || 0) || 1;
                 return React.createElement('div', { key: entry.id, className: "premium-card p-4 margin-consistency text-[#040316]" },
@@ -504,6 +522,7 @@
                 )
             );
 
+            // 修復：修復 groupedRecordsUI 定義順序與依賴關係
             const groupedRecordsUI = useMemo(() => {
                 if (!activePlan) return null;
                 const entries = view === 'history' ? (activePlan.workoutEntries || []) : (activePlan.dietEntries || []);
@@ -518,7 +537,7 @@
                 ));
             }, [activePlan, view, historyFilterDate]);
 
-            // --- 返回 JSX ---
+            // --- 返回渲染 JSX ---
             return React.createElement('div', { id: "root" },
                 // Header
                 React.createElement('header', { className: `z-30 transition-all ${view === 'home' ? 'p-4' : 'sticky top-0 bg-white/60 backdrop-blur-xl border-b border-gray-100/50 px-4 h-[64px] flex items-center'}` },
@@ -528,11 +547,11 @@
                                 React.createElement('div', { className: "w-14 h-14 rounded-full border-2 border-white shadow-md overflow-hidden bg-white" }, React.createElement('img', { src: "https://raw.githubusercontent.com/Minpi-0/Health-Tracker/main/img/avatar-myself.svg", alt: "avatar" })),
                                 React.createElement('div', { className: "flex flex-col" },
                                     React.createElement('h2', { className: "text-[20px] font-bold leading-tight" }, "Hello Min!"),
-                                    activePlan && React.createElement('div', { className: "text-[14px] font-medium text-[#94a3b8] flex items-center" }, "目前 ", React.createElement('span', { className: "text-[#f9991a] mx-1 font-bold" }, latestWeight), React.createElement('span', { className: "mx-1 opacity-30" }, "|"), " 初始 ", activePlan.baselineWeight)
+                                    activePlanId && React.createElement('div', { className: "text-[14px] font-medium text-[#94a3b8] flex items-center text-brand" }, "目前 ", React.createElement('span', { className: "text-[#f9991a] mx-1 font-bold text-brand" }, latestWeight), React.createElement('span', { className: "mx-1 opacity-30 text-brand" }, "|"), " 初始 ", activePlan?.baselineWeight)
                                 )
                             ),
-                            activePlan && React.createElement('div', { className: "flex gap-2.5" },
-                                React.createElement('div', { className: "status-circle bg-white text-[#f9991a] font-bold" }, activePlan.targetWeight),
+                            activePlanId && React.createElement('div', { className: "flex gap-2.5" },
+                                React.createElement('div', { className: "status-circle bg-white text-[#f9991a] font-bold" }, activePlan?.targetWeight),
                                 React.createElement('div', { className: "status-circle bg-[#f9991a] text-white font-bold" }, `-${daysLeft}`)
                             )
                         ),
@@ -554,7 +573,7 @@
                             }))
                         )
                     ) : React.createElement('div', { className: "flex-1 flex items-center justify-between relative h-full text-brand" },
-                        React.createElement('div', { className: "w-10 text-brand" }),
+                        React.createElement('div', { className: "w-10" }),
                         React.createElement('h1', { className: "absolute left-1/2 -translate-x-1/2 text-[18px] font-bold text-[#5a6a7a] whitespace-nowrap" }, view === 'plan' ? '計畫管理' : view === 'history' ? '運動回顧' : '飲食統計'),
                         React.createElement('button', { onClick: handleHeaderPlusClick, className: "header-plus-circle relative z-10 text-brand" }, React.createElement(Icon, { name: "plus", size: 24 }))
                     )
@@ -571,17 +590,49 @@
                                 ),
                                 !isEditingWeight && React.createElement('div', { onClick: () => setIsEditingWeight(true), className: "cursor-pointer p-1 text-[#9caeba]" }, React.createElement(Icon, { name: "edit-3", size: 18 }))
                             ),
-                            React.createElement('section', { className: "premium-card p-5 shadow-sm relative overflow-hidden margin-consistency", style: { backgroundImage: `url('https://raw.githubusercontent.com/Minpi-0/Health-Tracker/main/img/bg-mission.svg')`, backgroundSize: 'cover', backgroundPosition: 'center', border: 'none' } },
-                                React.createElement('div', { className: "relative z-10 flex flex-col gap-3 text-[#040316]" },
-                                    React.createElement('p', { className: "text-[13px] font-bold text-[#5a6a7a]" }, "今日挑戰！"),
-                                    React.createElement('div', { className: "flex items-center gap-3 text-brand" }, React.createElement('h2', { className: "text-[24px] font-bold text-[#f9991a] leading-none text-brand" }, todayReinforcement.name), React.createElement('span', { className: "px-3 py-1 bg-[#fff7ed] text-[#f9991a] text-[12px] font-bold rounded-lg border border-orange-100" }, "12x3組")),
-                                    React.createElement('p', { className: "text-[14px] text-[#5a6a7a] leading-relaxed font-medium" }, todayReinforcement.explanation),
-                                    React.createElement('div', { className: "flex gap-3 pt-2 text-brand" },
-                                        React.createElement('button', { onClick: () => window.open(`https://www.youtube.com/results?search_query=${encodeURIComponent(todayReinforcement.name)}`, '_blank'), className: "flex-1 h-11 border-2 border-[#f9991a] text-[#f9991a] bg-white/80 rounded-full font-bold text-[14px] active:scale-95" }, "學動作"),
-                                        React.createElement('button', { onClick: () => { setEntryType('workout'); setEditingId(null); setWNote(`補強：${todayReinforcement.name}`); setShowEntryModal(true); }, className: "flex-1 h-11 bg-[#f9991a] text-white rounded-full font-bold text-[14px] shadow-lg active:scale-95" }, "打卡")
+                            
+                            // 今日挑戰卡片：切換進階模式與打卡
+                            React.createElement('section', { 
+                                className: `premium-card p-5 shadow-lg relative overflow-hidden margin-consistency transition-all duration-500 border-none ${isTodayChallengeDone ? 'bg-gradient-to-br from-[#10b981] to-[#059669] text-white' : ''}`,
+                                style: !isTodayChallengeDone ? { backgroundImage: `url('https://raw.githubusercontent.com/Minpi-0/Health-Tracker/main/img/bg-mission.svg')`, backgroundSize: 'cover', backgroundPosition: 'center' } : {}
+                            },
+                                React.createElement('div', { className: "relative z-10 flex flex-col gap-3" },
+                                    React.createElement('div', { className: "flex justify-between items-center" },
+                                        React.createElement('p', { className: `text-[13px] font-bold ${isTodayChallengeDone ? 'text-white/80' : 'text-[#5a6a7a]'}` }, prefAdvanced ? "進階挑戰 🔥" : "今日挑戰！"),
+                                        isTodayChallengeDone && React.createElement('div', { className: "bg-white/20 rounded-full px-3 py-1 flex items-center gap-1" }, React.createElement(Icon, { name: "check-circle", size: 14 }), React.createElement('span', { className: "text-[10px] font-bold" }, "基礎達成"))
+                                    ),
+                                    React.createElement('div', { className: "flex items-center gap-3 text-brand" }, 
+                                        React.createElement('h2', { className: `text-[24px] font-bold leading-none ${isTodayChallengeDone ? 'text-white' : 'text-[#f9991a]'}` }, todayReinforcement.name),
+                                        React.createElement('span', { className: `px-3 py-1 text-[12px] font-bold rounded-lg border ${isTodayChallengeDone ? 'bg-white/20 border-white/30 text-white' : 'bg-[#fff7ed] border-orange-100 text-[#f9991a]'}` }, prefAdvanced ? "20x3組" : "12x3組")
+                                    ),
+                                    React.createElement('p', { className: `text-[14px] leading-relaxed font-medium ${isTodayChallengeDone ? 'text-white/90' : 'text-[#5a6a7a]'}` }, prefAdvanced ? todayReinforcement.advanced : todayReinforcement.explanation),
+                                    
+                                    React.createElement('div', { className: "flex flex-col gap-3 pt-2 text-brand" },
+                                        !isTodayChallengeDone ? (
+                                            React.createElement('div', { className: "flex gap-3" },
+                                                React.createElement('button', { onClick: () => watchYoutube(todayReinforcement.name), className: "flex-1 h-11 border-2 border-[#f9991a] text-[#f9991a] bg-white/80 rounded-full font-bold text-[14px] active:scale-95" }, "學動作"),
+                                                React.createElement('button', { onClick: () => handleQuickChallengeClockIn(false), className: "flex-1 h-11 bg-[#f9991a] text-white rounded-full font-bold text-[14px] shadow-lg active:scale-95" }, "打卡")
+                                            )
+                                        ) : !isTodayAdvancedDone ? (
+                                            React.createElement(React.Fragment, null,
+                                                !prefAdvanced ? (
+                                                    React.createElement('button', { onClick: () => setPrefAdvanced(true), className: "w-full h-11 bg-white/20 hover:bg-white/30 text-white rounded-full font-bold text-[14px] border border-white/40 active:scale-95" }, "切換進階挑戰 ✨")
+                                                ) : (
+                                                    React.createElement('div', { className: "space-y-3" },
+                                                        // 要求：進階介面 YouTube 影片按鈕
+                                                        React.createElement('button', { onClick: () => watchYoutube(todayReinforcement.name, true), className: "w-full h-11 bg-white text-[#10b981] rounded-full font-bold text-[14px] shadow active:scale-95 flex items-center justify-center gap-2" }, React.createElement(Icon, { name: "youtube", size: 18 }), "學進階動作"),
+                                                        React.createElement('div', { className: "flex gap-3 text-brand" },
+                                                            React.createElement('button', { onClick: () => setPrefAdvanced(false), className: "flex-1 h-11 border border-white/40 text-white rounded-full font-bold text-[14px] active:scale-95" }, "返回基礎"),
+                                                            React.createElement('button', { onClick: () => handleQuickChallengeClockIn(true), className: "flex-1 h-11 bg-white text-[#10b981] rounded-full font-bold text-[14px] shadow-lg active:scale-95" }, "進階打卡")
+                                                        )
+                                                    )
+                                                )
+                                            )
+                                        ) : React.createElement('div', { className: "w-full text-center py-2 text-[14px] font-bold text-white flex items-center justify-center gap-2 text-brand" }, React.createElement(Icon, { name: "flame", size: 18 }), "妳已達成今日最高挑戰！🔥")
                                     )
                                 )
                             ),
+
                             React.createElement('div', { className: "grid grid-cols-2 gap-4 margin-consistency text-brand" },
                                 React.createElement('button', { onClick: () => setView('history'), className: "premium-card p-5 flex flex-col items-center gap-3 active:scale-95 shadow-sm" }, React.createElement(Icon, { name: "dumbbell", size: 26, className: "text-[#f9991a]" }), React.createElement('p', { className: "text-[16px] font-bold text-[#7a8b9a]" }, "訓練日誌")),
                                 React.createElement('button', { onClick: () => setView('diet'), className: "premium-card p-5 flex flex-col items-center gap-3 active:scale-95 shadow-sm" }, React.createElement(Icon, { name: "utensils", size: 26, className: "text-[#5a6a7a]" }), React.createElement('p', { className: "text-[16px] font-bold text-[#7a8b9a]" }, "飲食紀錄"))
@@ -592,15 +643,15 @@
                                     React.createElement('span', { className: "text-[12px] font-bold text-[#9caeba] uppercase tracking-widest" }, view === 'history' ? '訓練摘要' : '營養摘要'),
                                     React.createElement('span', { className: "text-[14px] font-bold text-blue-400 flex items-center gap-1" }, React.createElement(Icon, { name: view === 'history' ? 'dumbbell' : 'droplets', size: 14 }), view === 'history' ? `${getDayWorkoutTotals(historyFilterDate).count} 筆` : `${getDayDietTotals(historyFilterDate).water} cc`)
                                 ),
-                                view === 'history' ? React.createElement('div', { className: "grid grid-cols-3 gap-2 text-brand" },
+                                view === 'history' ? React.createElement('div', { className: "grid grid-cols-3 gap-2" },
                                     React.createElement('div', { className: "bg-orange-50/50 rounded-xl p-3 flex flex-col items-center border border-orange-100/50" }, React.createElement('span', { className: "text-[10px] font-bold text-[#f9991a] uppercase mb-1" }, "動作數"), React.createElement('span', { className: "text-[15px] font-bold" }, getDayWorkoutTotals(historyFilterDate).moves)),
                                     React.createElement('div', { className: "bg-blue-50/50 rounded-xl p-3 flex flex-col items-center border border-blue-100" }, React.createElement('span', { className: "text-[10px] font-bold text-[#5a6a7a] uppercase mb-1" }, "部位數"), React.createElement('span', { className: "text-[15px] font-bold" }, getDayWorkoutTotals(historyFilterDate).parts)),
                                     React.createElement('div', { className: "bg-gray-50 rounded-xl p-3 flex flex-col items-center border border-gray-100" }, React.createElement('span', { className: "text-[10px] font-bold text-[#9caeba] uppercase mb-1" }, "狀態"), React.createElement('span', { className: "text-[15px] font-bold" }, "Good"))
                                 ) : React.createElement('div', { className: "grid grid-cols-4 gap-1.5 text-brand" },
-                                    React.createElement('div', { className: "bg-orange-50/50 rounded-xl p-2.5 flex flex-col items-center border border-orange-100/50" }, React.createElement('span', { className: "text-[10px] font-bold text-[#f9991a] mb-1" }, "熱量"), React.createElement('span', { className: "text-[14px] font-bold" }, getDayDietTotals(historyFilterDate).kcal)),
-                                    React.createElement('div', { className: "bg-blue-50/50 rounded-xl p-2.5 flex flex-col items-center border border-blue-100" }, React.createElement('span', { className: "text-[10px] font-bold text-[#5a6a7a] mb-1" }, "蛋白"), React.createElement('span', { className: "text-[14px] font-bold" }, `${getDayDietTotals(historyFilterDate).p}g`)),
-                                    React.createElement('div', { className: "bg-gray-50 rounded-xl p-2.5 flex flex-col items-center border border-gray-100" }, React.createElement('span', { className: "text-[10px] font-bold text-[#9caeba] mb-1" }, "脂肪"), React.createElement('span', { className: "text-[14px] font-bold" }, `${getDayDietTotals(historyFilterDate).f}g`)),
-                                    React.createElement('div', { className: "bg-gray-50 rounded-xl p-2.5 flex flex-col items-center border border-gray-100" }, React.createElement('span', { className: "text-[10px] font-bold text-[#9caeba] mb-1" }, "碳水"), React.createElement('span', { className: "text-[14px] font-bold" }, `${getDayDietTotals(historyFilterDate).c}g`))
+                                    React.createElement('div', { className: "bg-orange-50/50 rounded-xl p-2.5 flex flex-col items-center border border-orange-100/50 text-brand" }, React.createElement('span', { className: "text-[10px] font-bold text-[#f9991a] mb-1" }, "熱量"), React.createElement('span', { className: "text-[14px] font-bold" }, getDayDietTotals(historyFilterDate).kcal)),
+                                    React.createElement('div', { className: "bg-blue-50/50 rounded-xl p-2.5 flex flex-col items-center border border-blue-100 text-brand" }, React.createElement('span', { className: "text-[10px] font-bold text-[#5a6a7a] mb-1" }, "蛋白"), React.createElement('span', { className: "text-[14px] font-bold" }, `${getDayDietTotals(historyFilterDate).p}g`)),
+                                    React.createElement('div', { className: "bg-gray-50 rounded-xl p-2.5 flex flex-col items-center border border-gray-100 text-brand" }, React.createElement('span', { className: "text-[10px] font-bold text-[#9caeba] mb-1" }, "脂肪"), React.createElement('span', { className: "text-[14px] font-bold" }, `${getDayDietTotals(historyFilterDate).f}g`)),
+                                    React.createElement('div', { className: "bg-gray-50 rounded-xl p-2.5 flex flex-col items-center border border-gray-100 text-brand" }, React.createElement('span', { className: "text-[10px] font-bold text-[#9caeba] mb-1" }, "碳水"), React.createElement('span', { className: "text-[14px] font-bold" }, `${getDayDietTotals(historyFilterDate).c}g`))
                                 ),
                                 React.createElement('div', { className: "bg-[#f2f4f7] p-3 rounded-xl text-brand" }, React.createElement('p', { className: "text-[12px] italic font-medium text-[#5a6a7a]" }, `「${nutrientInsight}」`))
                             ),
@@ -608,7 +659,7 @@
                         ) : (view === 'plan') ? React.createElement('div', { className: "space-y-0 text-brand" }, plans.map(p => React.createElement('div', { key: p.id, className: "premium-card p-5 margin-consistency shadow-sm text-[#040316]" },
                             React.createElement('div', { className: "flex justify-between items-start mb-4" },
                                 React.createElement('div', { className: "flex flex-col gap-1" }, React.createElement('h3', { className: "text-[18px] font-bold tracking-tight" }, p.title), React.createElement('div', { className: "flex items-center gap-2 text-[14px] font-bold text-[#9caeba]" }, React.createElement(Icon, { name: "calendar", size: 12 }), `${p.targetDate} 截止`)),
-                                React.createElement('div', { className: "flex gap-1 -mr-2" }, React.createElement('button', { onClick: () => handleEditPlan(p), className: "touch-target text-[#9caeba] active:text-[#f9991a]" }, React.createElement(Icon, { name: "edit-3", size: 24 })), React.createElement('button', { onClick: () => confirmDelete('plan', p.id), className: "touch-target text-[#9caeba] active:text-red-400" }, React.createElement(Icon, { name: "trash-2", size: 24 })))
+                                React.createElement('div', { className: "flex gap-1 -mr-2 text-brand" }, React.createElement('button', { onClick: () => handleEditPlan(p), className: "touch-target text-[#9caeba] active:text-[#f9991a]" }, React.createElement(Icon, { name: "edit-3", size: 24 })), React.createElement('button', { onClick: () => confirmDelete('plan', p.id), className: "touch-target text-[#9caeba] active:text-red-400" }, React.createElement(Icon, { name: "trash-2", size: 24 })))
                             ),
                             React.createElement('div', { className: "bg-blue-50/50 rounded-[12px] p-4 mb-4 flex items-center justify-between border border-white/40 text-[14px]" },
                                 React.createElement('div', { className: "flex flex-col items-center flex-1" }, React.createElement('span', { className: "text-[14px] font-bold text-[#9caeba] uppercase mb-1" }, "起始"), React.createElement('span', { className: "font-bold text-[#5a6a7a]" }, `${p.baselineWeight} kg`)),
@@ -625,14 +676,14 @@
 
                 // Navbar
                 React.createElement('nav', { className: "island-navbar text-[#9caeba] text-brand" },
-                    React.createElement('div', { className: "flex flex-1 justify-around items-center" },
+                    React.createElement('div', { className: "flex flex-1 justify-around items-center text-brand" },
                         React.createElement('button', { onClick: () => setView('home'), className: `flex flex-col items-center gap-0.5 transition-all ${view === 'home' ? 'text-[#f9991a] scale-105' : 'opacity-60'}` }, React.createElement(Icon, { name: "home", size: 24 }), React.createElement('span', { className: "text-[12px] font-bold tracking-tight" }, "首頁")),
-                        React.createElement('button', { onClick: () => setView('history'), className: `flex flex-col items-center gap-0.5 transition-all ${view === 'history' ? 'text-[#f9991a] scale-105' : 'opacity-60'}` }, React.createElement(Icon, { name: "activity", size: 24 }), React.createElement('span', { className: "text-[12px] font-bold tracking-tight" }, "運動"))
+                        React.createElement('button', { onClick: () => setView('history'), className: `flex flex-col items-center gap-0.5 transition-all ${view === 'history' ? 'text-[#f9991a] scale-105' : 'opacity-60'}` }, React.createElement(Icon, { name: "activity", size: 24 }), React.createElement('span', { className: "text-[12px] font-bold tracking-tight text-brand" }, "運動"))
                     ),
-                    React.createElement('button', { onClick: handleHeaderPlusClick, className: "glow-action-btn shadow-xl active:scale-90 text-white font-bold tracking-widest text-[16px] text-brand" }, activePlanId ? React.createElement(Icon, { name: "plus", size: 32 }) : "GO!"),
+                    React.createElement('button', { onClick: handleHeaderPlusClick, className: "glow-action-btn shadow-xl active:scale-90 text-white font-bold tracking-widest text-[16px]" }, activePlanId ? React.createElement(Icon, { name: "plus", size: 32 }) : "GO!"),
                     React.createElement('div', { className: "flex flex-1 justify-around items-center text-brand" },
                         React.createElement('button', { onClick: () => setView('diet'), className: `flex flex-col items-center gap-0.5 transition-all ${view === 'diet' ? 'text-[#f9991a] scale-105' : 'opacity-60'}` }, React.createElement(Icon, { name: "utensils", size: 24 }), React.createElement('span', { className: "text-[12px] font-bold tracking-tight" }, "飲食")),
-                        React.createElement('button', { onClick: () => setView('plan'), className: `flex flex-col items-center gap-0.5 transition-all ${view === 'plan' ? 'text-[#f9991a] scale-105' : 'opacity-60'}` }, React.createElement(Icon, { name: "clipboard", size: 24 }), React.createElement('span', { className: "text-[12px] font-bold tracking-tight" }, "計畫"))
+                        React.createElement('button', { onClick: () => setView('plan'), className: `flex flex-col items-center gap-0.5 transition-all ${view === 'plan' ? 'text-[#f9991a] scale-105' : 'opacity-60'}` }, React.createElement(Icon, { name: "clipboard", size: 24 }), React.createElement('span', { className: "text-[12px] font-bold tracking-tight text-brand" }, "計畫"))
                     )
                 ),
 
@@ -646,33 +697,33 @@
                             React.createElement('div', { onClick: closeModal, className: "touch-target text-[#9caeba]" }, React.createElement(Icon, { name: "x", size: 24 }))
                         ),
                         React.createElement('div', { className: "flex-1 overflow-y-auto p-4 space-y-4 no-scrollbar text-brand" },
-                            !editingId && React.createElement('div', { className: "flex bg-gray-100 p-1 rounded-xl" },
+                            !editingId && React.createElement('div', { className: "flex bg-gray-100 p-1 rounded-xl text-brand" },
                                 React.createElement('button', { onClick: () => setEntryType('workout'), className: `flex-1 h-[32px] rounded-[10px] text-[13px] font-bold transition-all ${entryType === 'workout' ? 'bg-white shadow-sm text-[#040316]' : 'text-[#9caeba]'}` }, "訓練項目"),
                                 React.createElement('button', { onClick: () => setEntryType('diet'), className: `flex-1 h-[32px] rounded-[10px] text-[13px] font-bold transition-all ${entryType === 'diet' ? 'bg-white shadow-sm text-[#040316]' : 'text-[#9caeba]'}` }, "飲食餐點")
                             ),
                             React.createElement('div', { className: "space-y-4" },
                                 React.createElement('div', null, React.createElement('span', { className: "text-[16px] font-bold text-[#5a6a7a] mb-2 block" }, "紀錄日期"), React.createElement('input', { type: "date", value: entryType === 'workout' ? w_date : d_date, onChange: e => entryType === 'workout' ? setWDate(e.target.value) : setDDate(e.target.value), className: "px-[12px] h-11 bg-blue-50/50 rounded-xl w-full border-none outline-none" })),
-                                entryType === 'workout' ? React.createElement('div', { className: "space-y-4 text-brand" },
-                                    React.createElement('div', null, React.createElement('span', { className: "text-[16px] font-bold text-[#5a6a7a] mb-2 block" }, "動作清單"), React.createElement('div', { className: "flex gap-2 overflow-x-auto no-scrollbar mb-3" }, Object.keys(PILATES_DATABASE).map(cat => React.createElement('button', { key: cat, onClick: () => setWCategory(cat), className: `tag-btn ${w_category === cat ? 'active' : ''}` }, cat.split(' ')[0]))), React.createElement('div', { className: "equipment-block" }, PILATES_DATABASE[w_category].map(move => {
+                                entryType === 'workout' ? React.createElement('div', { className: "space-y-4" },
+                                    React.createElement('div', null, React.createElement('span', { className: "text-[16px] font-bold text-[#5a6a7a] mb-2 block text-brand" }, "動作清單"), React.createElement('div', { className: "flex gap-2 overflow-x-auto no-scrollbar mb-3" }, Object.keys(PILATES_DATABASE).map(cat => React.createElement('button', { key: cat, onClick: () => setWCategory(cat), className: `tag-btn ${w_category === cat ? 'active' : ''}` }, cat.split(' ')[0]))), React.createElement('div', { className: "equipment-block" }, PILATES_DATABASE[w_category].map(move => {
                                         const cE = w_exercises.find(e => e.name === move); const isS = !!cE;
                                         return React.createElement('div', { key: move, className: `exercise-item-card ${isS ? 'active' : ''}` },
                                             React.createElement('div', { className: "flex items-center justify-between w-full" },
                                                 React.createElement('div', { className: "flex items-center gap-4 flex-1 cursor-pointer", onClick: () => handleAddExercise(move) }, React.createElement('div', { className: `plus-box ${isS ? 'active' : ''}` }, React.createElement(Icon, { name: isS ? "check" : "plus", size: 18 })), React.createElement('span', { className: "text-[14px] font-bold" }, move)),
                                                 React.createElement('button', { onClick: (e) => { e.stopPropagation(); watchYoutube(move); }, className: "touch-target text-red-300" }, React.createElement(Icon, { name: "youtube", size: 20 }))
                                             ),
-                                            isS && React.createElement('div', { className: "flex gap-4 pt-1 border-t border-orange-50 text-[12px] font-bold text-[#5a6a7a]" },
+                                            isS && React.createElement('div', { className: "flex gap-4 pt-1 border-t border-orange-50 text-[12px] font-bold text-[#5a6a7a] text-brand" },
                                                 React.createElement('div', { className: "flex-1 flex items-center bg-[#f2f4f7] rounded-xl px-2 py-1.5" }, React.createElement('button', { onClick: () => updateEx(move, 'sets', -1), className: "stepper-btn" }, "-"), React.createElement('span', { className: "flex-1 text-center" }, `${cE.sets}組`), React.createElement('button', { onClick: () => updateEx(move, 'sets', 1), className: "stepper-btn" }, "+")),
                                                 React.createElement('div', { className: "flex-1 flex items-center bg-[#f2f4f7] rounded-xl px-2 py-1.5" }, React.createElement('button', { onClick: () => updateEx(move, 'reps', -1), className: "stepper-btn" }, "-"), React.createElement('span', { className: "flex-1 text-center" }, `${cE.reps}次`), React.createElement('button', { onClick: () => updateEx(move, 'reps', 1), className: "stepper-btn" }, "+"))
                                             )
                                         );
                                     }))),
-                                    React.createElement('div', null, React.createElement('span', { className: "text-[16px] font-bold text-[#5a6a7a] mb-2 block" }, "訓練筆記"), React.createElement('textarea', { value: w_note, onChange: e => setWNote(e.target.value), placeholder: "妳今天的心情如何？", className: "note-textarea bg-blue-50/50 text-brand" }))
+                                    React.createElement('div', null, React.createElement('span', { className: "text-[16px] font-bold text-[#5a6a7a] mb-2 block text-brand" }, "訓練隨筆"), React.createElement('textarea', { value: w_note, onChange: e => setWNote(e.target.value), placeholder: "妳今天的心情如何？", className: "note-textarea bg-blue-50/50" }))
                                 ) : React.createElement('div', { className: "space-y-4 text-brand" },
                                     React.createElement('div', { className: "flex items-center justify-between bg-blue-50/50 p-6 rounded-[24px] text-[#f9991a] shadow-inner text-brand" },
-                                        React.createElement('div', { className: "flex items-center gap-4" }, React.createElement(Icon, { name: "droplets", size: 26 }), React.createElement('div', { className: "flex items-baseline min-w-[110px] text-[#040316]" }, React.createElement('input', { type: "number", value: d_water, onChange: e => setDWater(e.target.value), className: "w-24 bg-transparent text-[28px] font-bold outline-none" }), React.createElement('span', { className: "text-[14px] font-bold text-[#9caeba] ml-1" }, "cc"))),
-                                        React.createElement('div', { className: "flex gap-2 text-brand" }, React.createElement('button', { onClick: () => setDWater(Math.max(0, Number(d_water) - 250)), className: "w-10 h-10 bg-white rounded-xl shadow-sm font-bold text-[#040316]" }, "-"), React.createElement('button', { onClick: () => setDWater(Number(d_water) + 250), className: "w-10 h-10 bg-[#f9991a] text-white rounded-xl shadow-md" }, "+"))
+                                        React.createElement('div', { className: "flex items-center gap-4 text-brand" }, React.createElement(Icon, { name: "droplets", size: 26 }), React.createElement('div', { className: "flex items-baseline min-w-[110px] text-[#040316] text-brand" }, React.createElement('input', { type: "number", value: d_water, onChange: e => setDWater(e.target.value), className: "w-24 bg-transparent text-[28px] font-bold outline-none" }), React.createElement('span', { className: "text-[14px] font-bold text-[#9caeba] ml-1" }, "cc"))),
+                                        React.createElement('div', { className: "flex gap-2 text-brand" }, React.createElement('button', { onClick: () => setDWater(Math.max(0, Number(d_water) - 250)), className: "w-10 h-10 bg-white rounded-xl shadow-sm font-bold text-[#040316] active:scale-90" }, "-"), React.createElement('button', { onClick: () => setDWater(Number(d_water) + 250), className: "w-10 h-10 bg-[#f9991a] text-white rounded-xl shadow-md active:scale-90" }, "+"))
                                     ),
-                                    ['breakfast', 'lunch', 'dinner', 'snacks'].map(meal => React.createElement('div', { key: meal, className: "space-y-2 text-brand" },
+                                    ['breakfast', 'lunch', 'dinner', 'snacks'].map(meal => React.createElement('div', { key: meal, className: "space-y-2" },
                                         React.createElement('p', { className: "text-[16px] font-bold text-[#5a6a7a] mb-2" }, meal === 'breakfast' ? '早餐' : meal === 'lunch' ? '午餐' : meal === 'dinner' ? '晚餐' : '點心'),
                                         React.createElement('textarea', { value: dietForm[meal], onChange: e => setDietForm(p => ({ ...p, [meal]: e.target.value })), rows: "2", placeholder: "紀錄妳的餐點...", className: "text-[14px] p-3 bg-blue-50/50 rounded-xl w-full border-none outline-none text-[#040316] text-brand" }),
                                         React.createElement('div', { className: "flex gap-2 overflow-x-auto no-scrollbar pt-1 items-center" },
@@ -689,7 +740,7 @@
                                 )
                             )
                         ),
-                        // 要求：按鈕固定在底部，留白 16px
+                        // 按鈕固定在底部，留白 16px
                         React.createElement('div', { className: "p-4 bg-white border-t border-gray-50 pb-4 text-brand" }, React.createElement('button', { onClick: handleSaveEntry, disabled: isSaving, className: "primary-btn w-full shadow-lg text-white flex items-center justify-center gap-2" }, isSaving ? "同步中..." : "儲存紀錄"))
                     )
                 ),
@@ -711,7 +762,7 @@
                                 React.createElement('div', { className: "weight-input-card flex-1 bg-orange-50/30 p-4 rounded-[20px] flex flex-col items-center gap-1 border border-orange-100" }, React.createElement('span', { className: "text-[11px] font-bold text-[#f9991a] uppercase text-brand" }, "目標"), React.createElement('div', { className: "flex items-baseline" }, React.createElement('input', { type: "number", step: "0.1", value: newPlanTargetWeight, onChange: e => setNewPlanTargetWeight(e.target.value), placeholder: "50.0", className: "!text-[#f9991a] w-16 bg-transparent text-center text-[20px] font-bold outline-none" }), React.createElement('span', { className: "text-[12px] font-bold text-[#f9991a] ml-0.5" }, "kg")))
                             ))
                         ),
-                        React.createElement('div', { className: "p-4 bg-white border-t border-gray-50 pb-4 text-brand" }, React.createElement('button', { onClick: handleCreatePlan, disabled: isSaving || !newPlanDate || !newPlanTitle, className: "primary-btn w-full shadow-lg font-bold tracking-widest uppercase text-brand" }, isSaving ? "同步中..." : "啟動計畫"))
+                        React.createElement('div', { className: "p-4 bg-white border-t border-gray-50 pb-4 text-brand" }, React.createElement('button', { onClick: handleCreatePlan, disabled: isSaving || !newPlanDate || !newPlanTitle, className: "primary-btn w-full shadow-lg font-bold tracking-widest uppercase" }, isSaving ? "同步中..." : "啟動計畫"))
                     )
                 ),
 
