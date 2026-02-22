@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>K-Glow Tracker</title>
-    <!-- 引入核心庫 -->
+    <!-- 核心程式庫 -->
     <script src="https://cdn.tailwindcss.com/"></script>
     <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
@@ -21,7 +21,7 @@
             --accent-color: #f9991a; 
             --gray-blue: #5a6a7a;
             --muted-gray: #9caeba;
-            --radius-sheet: 16px; /* 要求：圓角 16px */
+            --radius-sheet: 16px;
             --ice-blue: rgba(233, 241, 251, 0.5);
         }
 
@@ -70,9 +70,7 @@
         .tag-btn.active { background-color: var(--accent-color); border-color: var(--accent-color); color: white; }
 
         .equipment-block { background-color: #f1f5f9; border-radius: 16px; padding: 12px; margin-top: 8px; }
-        .exercise-item-card { background-color: white; border-radius: 16px; padding: 10px; display: flex; flex-direction: column; gap: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.02); transition: all 0.2s ease; margin-bottom: 8px; border: 1px solid transparent; }
-        .exercise-item-card.active { border-color: rgba(249, 153, 26, 0.3); background-color: #fffaf5; }
-
+        
         .stepper-btn { width: 32px; height: 32px; background-color: white; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-weight: 700; color: var(--gray-blue); box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
         
         .note-textarea { height: 60px !important; min-height: 60px !important; padding: 12px !important; font-size: 14px; line-height: 1.5; border-radius: 12px; width: 100%; outline: none; border: none; }
@@ -102,7 +100,7 @@
         .sheet-content {
             position: relative; z-index: 1010; width: 100%; max-width: 430px; background: white;
             border-top-left-radius: var(--radius-sheet); border-top-right-radius: var(--radius-sheet); 
-            height: 75vh; /* 要求：開啟高度為螢幕 75% */
+            height: 75vh; 
             display: flex; flex-direction: column; pointer-events: auto; animation: slide-up 0.35s cubic-bezier(0.16, 1, 0.3, 1);
             overflow: hidden;
         }
@@ -124,15 +122,25 @@
         .touch-target { width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; cursor: pointer; }
         
         .margin-consistency { margin-bottom: 16px; }
+
+        .exercise-item-card { background-color: white; border-radius: 16px; padding: 10px; display: flex; flex-direction: column; gap: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.02); margin-bottom: 8px; border: 1px solid transparent; }
+        .exercise-item-card.active { border-color: rgba(249, 153, 26, 0.3); background-color: #fffaf5; }
     </style>
 </head>
 <body>
     <div id="root"></div>
 
-    <script type="text/babel">
+    <script type="module">
+        // 修復：確保在模組環境中能正確識別 React
+        const React = window.React;
+        const ReactDOM = window.ReactDOM;
         const { useState, useMemo, useEffect, useRef } = React;
 
-        // Firebase 配置預留位
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, onAuthStateChanged, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, setDoc, getDoc, collection, query, onSnapshot, addDoc, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // --- 貼上妳的 Firebase Config 在這裡 ---
         const myFirebaseConfig = {
             apiKey: "AIzaSyBpCw2-cfSDaE0ABznkvULKD9sxgjlR9OI", // 例如: "AIzaSy..."
             authDomain: "health-tracker-ed193.firebaseapp.com",
@@ -142,7 +150,14 @@
             appId: "1:77615585267:web:451f6672cc9834dc92a486"
         };
 
-        // --- 1. Icon 元件 ---
+        // Firebase 初始化 (優先使用 myFirebaseConfig，若無則嘗試環境變數)
+        const firebaseConfig = myFirebaseConfig.apiKey ? myFirebaseConfig : (typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : { apiKey: "" });
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'k-glow-tracker';
+
+        // --- 核心組件 ---
         const Icon = ({ name, size = 24, className = "" }) => {
             const wrapperRef = useRef(null);
             useEffect(() => {
@@ -151,31 +166,9 @@
                     window.lucide.createIcons({ root: wrapperRef.current, attrs: { width: size, height: size, class: className } });
                 }
             }, [name, size, className]);
-            return <span ref={wrapperRef} className={`inline-flex items-center justify-center shrink-0 ${className}`} />;
+            return React.createElement('span', { ref: wrapperRef, className: `inline-flex items-center justify-center shrink-0 ${className}` });
         };
 
-        // --- 2. AI 換算邏輯 ---
-        const apiKey = ""; 
-        const fetchBatchNutritionData = async (fullText) => {
-            if (!fullText) return { kcal: 0, p: 0, f: 0, c: 0 };
-            const systemPrompt = "妳是一位專業營養師。請計算飲食清單的『總結』營養：熱量(kcal)、蛋白質(g)、脂肪(g)、碳水(g)。請只回傳 JSON 格式：{\"kcal\": 數值, \"p\": 數值, \"f\": 數值, \"c\": 數值}。";
-            try {
-                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        contents: [{ parts: [{ text: `內容：${fullText}` }] }],
-                        systemInstruction: { parts: [{ text: systemPrompt }] },
-                        generationConfig: { responseMimeType: "application/json" }
-                    })
-                });
-                const result = await response.json();
-                const text = result.candidates?.[0]?.content?.parts?.[0]?.text;
-                return text ? JSON.parse(text) : { kcal: 0, p: 0, f: 0, c: 0 };
-            } catch (err) { return { kcal: 0, p: 0, f: 0, c: 0 }; }
-        };
-
-        const BODY_PARTS = ['核心', '上半身', '下半身', '全身流動'];
         const PILATES_DATABASE = {
           "核心床 (REFORMER)": ["足部練習", "腿部圈圓", "大象式", "短箱系列", "背部划船"],
           "凱迪拉克 (CADILLAC)": ["捲身下壓", "推棒運動", "猴子式", "彈簧腿圈", "塔式運動"],
@@ -189,11 +182,11 @@
         ];
 
         const App = () => {
+            const [user, setUser] = useState(null);
             const [view, setView] = useState('home');
             const [plans, setPlans] = useState([]);
             const [activePlanId, setActivePlanId] = useState(null);
             
-            // UI 控制
             const [showEntryModal, setShowEntryModal] = useState(false);
             const [showPlanModal, setShowPlanModal] = useState(false);
             const [showConfirmModal, setShowConfirmModal] = useState(false);
@@ -203,16 +196,12 @@
             const [historyFilterDate, setHistoryFilterDate] = useState(new Date().toISOString().split('T')[0]);
             const [weekOffset, setWeekOffset] = useState(0);
 
-            // 自訂快捷食物
             const [quickFoods, setQuickFoods] = useState({ 
-                breakfast: ["無糖豆漿", "水煮蛋", "地瓜"], 
-                lunch: ["舒肥雞胸", "健康餐盒", "沙拉"], 
-                dinner: ["燙青菜", "煎豆腐", "糙米飯"], 
-                snacks: ["綜合堅果", "優格", "蛋白飲"]
+                breakfast: ["荷包蛋", "地瓜", "無糖豆漿"], lunch: ["雞胸肉", "健康餐盒", "沙拉"], 
+                dinner: ["燙青菜", "煎豆腐", "糙米飯"], snacks: ["堅果", "優格", "蛋白飲"]
             });
             const [customFoodInput, setCustomFoodInput] = useState({ breakfast: '', lunch: '', dinner: '', snacks: '' });
 
-            // 紀錄表單
             const [editingId, setEditingId] = useState(null);
             const [w_date, setWDate] = useState(new Date().toISOString().split('T')[0]);
             const [d_date, setDDate] = useState(new Date().toISOString().split('T')[0]);
@@ -223,7 +212,6 @@
             const [w_weight, setWWeight] = useState('');
             const [isEditingWeight, setIsEditingWeight] = useState(false);
             const [confirmAnim, setConfirmAnim] = useState(false);
-
             const [dietForm, setDietForm] = useState({ breakfast: '', lunch: '', dinner: '', snacks: '' });
             const [d_water, setDWater] = useState(200);
             const [isSaving, setIsSaving] = useState(false);
@@ -234,30 +222,81 @@
             const [newPlanBaselineWeight, setNewPlanBaselineWeight] = useState('');
             const [newPlanTargetWeight, setNewPlanTargetWeight] = useState('');
 
-            // --- 核心運算函式 (修復順序，確保可用) ---
+            // --- 重要：功能處理函式 ---
+            const closeModal = () => { 
+                setShowEntryModal(false); setShowPlanModal(false); setEditingPlanId(null); setEditingId(null);
+                setWNote(''); setWExercises([]); setWParts([]); setDietForm({ breakfast: '', lunch: '', dinner: '', snacks: '' });
+                setDWater(200); setIsSaving(false);
+            };
+
+            const confirmDelete = (type, id, extra = null) => {
+                setConfirmAction({ type, id, extra });
+                setShowConfirmModal(true);
+            };
+
+            const handleHeaderPlusClick = () => {
+                if (view === 'plan' || !activePlanId) {
+                    setEditingPlanId(null); setNewPlanTitle(''); setNewPlanDate('');
+                    setNewPlanBaselineWeight(''); setNewPlanTargetWeight('');
+                    setShowPlanModal(true);
+                } else {
+                    setEditingId(null); setEntryType(view === 'diet' ? 'diet' : 'workout');
+                    setShowEntryModal(true);
+                }
+            };
+
+            const handleQuickFoodSelect = (meal, food) => {
+                setDietForm(p => ({ ...p, [meal]: p[meal] ? p[meal] + "、" + food : food }));
+            };
+
+            const handleEditRecord = (entry, type) => {
+                setEntryType(type); setEditingId(entry.id);
+                if (type === 'workout') { setWDate(entry.date); setWParts(entry.parts || []); setWExercises(entry.exercises || []); setWNote(entry.note || ''); }
+                else { setDDate(entry.date); setDietForm({ breakfast: entry.breakfast, lunch: entry.lunch, dinner: entry.dinner, snacks: entry.snacks }); setDWater(entry.water); }
+                setShowEntryModal(true);
+            };
+
+            const handleAddExercise = (name) => setWExercises(p => p.some(e => e.name === name) ? p.filter(e => e.name !== name) : [...p, { name, sets: 3, reps: 12 }]);
+            const updateEx = (name, field, delta) => setWExercises(p => p.map(ex => ex.name === name ? { ...ex, [field]: Math.max(1, ex[field] + delta) } : ex));
+            const watchYoutube = (name) => window.open(`https://www.youtube.com/results?search_query=${encodeURIComponent(name)}+pilates+tutorial`, '_blank');
+            const handleEditPlan = (plan) => { setEditingPlanId(plan.id); setNewPlanTitle(plan.title); setNewPlanDate(plan.targetDate); setNewPlanBaselineWeight(plan.baselineWeight); setNewPlanTargetWeight(plan.targetWeight); setShowPlanModal(true); };
+
+            // --- 運算邏輯 ---
             const activePlan = useMemo(() => plans.find(p => p.id === activePlanId) || null, [plans, activePlanId]);
-            const isNoPlans = useMemo(() => plans.length === 0, [plans]);
-            
+
+            const weekDaysList = useMemo(() => {
+                const now = new Date();
+                const start = new Date(now);
+                start.setDate(now.getDate() - now.getDay() + (weekOffset * 7));
+                return Array.from({ length: 7 }, (_, i) => {
+                    const d = new Date(start);
+                    d.setDate(start.getDate() + i);
+                    return { date: d.toISOString().split('T')[0], label: ['日','一','二','三','四','五','六'][i], num: d.getDate() };
+                });
+            }, [weekOffset]);
+
+            const currentMonthLabel = useMemo(() => {
+                if (weekDaysList.length === 0) return "";
+                const d = new Date(weekDaysList[0].date);
+                return `${d.getMonth() + 1}月 本週`;
+            }, [weekDaysList]);
+
             const getDayDietTotals = (date) => {
                 const dayEntries = activePlan?.dietEntries?.filter(e => e.date === date) || [];
                 return dayEntries.reduce((acc, curr) => ({
-                    kcal: acc.kcal + (Number(curr.kcal) || 0),
-                    p: acc.p + (Number(curr.p) || 0),
-                    f: acc.f + (Number(curr.f) || 0),
-                    c: acc.c + (Number(curr.c) || 0),
-                    water: acc.water + (Number(curr.water) || 0)
+                    kcal: acc.kcal + (Number(curr.kcal) || 0), p: acc.p + (Number(curr.p) || 0), f: acc.f + (Number(curr.f) || 0), c: acc.c + (Number(curr.c) || 0), water: acc.water + (Number(curr.water) || 0)
                 }), { kcal: 0, p: 0, f: 0, c: 0, water: 0 });
             };
 
             const getDayWorkoutTotals = (date) => {
                 const dayEntries = activePlan?.workoutEntries?.filter(e => e.date === date) || [];
                 const partsSet = new Set();
-                let exercisesCount = 0;
+                let movesCount = 0;
                 dayEntries.forEach(entry => {
                     if (entry.parts) entry.parts.forEach(p => partsSet.add(p));
-                    if (entry.exercises) exercisesCount += entry.exercises.length;
+                    if (entry.exercises) movesCount += entry.exercises.length;
                 });
-                return { count: dayEntries.length, parts: partsSet.size, moves: exercisesCount };
+                return { count: dayEntries.length, parts: partsSet.size, moves: movesCount };
             };
 
             const dateStats = (dateStr) => {
@@ -278,487 +317,396 @@
 
             const latestWeight = useMemo(() => activePlan?.workoutEntries?.find(e => e.weight > 0)?.weight || activePlan?.baselineWeight || 0, [activePlan]);
 
-            const weekDaysList = useMemo(() => {
-                const now = new Date();
-                const start = new Date(now);
-                start.setDate(now.getDate() - now.getDay() + (weekOffset * 7));
-                return Array.from({ length: 7 }, (_, i) => {
-                    const d = new Date(start);
-                    d.setDate(start.getDate() + i);
-                    return { date: d.toISOString().split('T')[0], label: ['日','一','二','三','四','五','六'][i], num: d.getDate() };
-                });
-            }, [weekOffset, plans, activePlanId]);
+            const nutrientInsight = useMemo(() => {
+                const t = getDayDietTotals(historyFilterDate);
+                if (t.kcal === 0) return "今天還沒有紀錄飲食喔 ✨";
+                return t.p > 60 ? "蛋白質充足！肌肉正在感謝妳！💪" : "比例不錯喔！繼續朝目標邁進！🌟";
+            }, [activePlan, historyFilterDate, plans, activePlanId]);
 
-            const currentMonthLabel = useMemo(() => {
-                if (weekDaysList.length === 0) return "";
-                const d = new Date(weekDaysList[0].date);
-                return `${d.getMonth() + 1}月 本週`;
-            }, [weekDaysList]);
+            const todayReinforcement = useMemo(() => DAILY_REINFORCEMENTS[new Date(historyFilterDate).getDate() % DAILY_REINFORCEMENTS.length || 0], [historyFilterDate]);
 
-            const groupedRecords = useMemo(() => {
-                if (!activePlan) return [];
+            // --- 異步功能 ---
+            const executeDelete = async () => {
+                if (!user || !confirmAction) return;
+                const { type, id, extra } = confirmAction;
+                if (type === 'plan') {
+                    await deleteDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'plans', id));
+                    if (activePlanId === id) {
+                        await setDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'settings', 'profile'), { activePlanId: null }, { merge: true });
+                        setActivePlanId(null);
+                    }
+                } else if (type === 'quickFood') {
+                    setQuickFoods(prev => ({ ...prev, [extra]: prev[extra].filter(f => f !== id) }));
+                } else if (activePlan) {
+                    let updated = { ...activePlan };
+                    if (type === 'workout') updated.workoutEntries = updated.workoutEntries.filter(e => e.id !== id);
+                    if (type === 'diet') updated.dietEntries = updated.dietEntries.filter(e => e.id !== id);
+                    await updateDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'plans', activePlan.id), updated);
+                }
+                setShowConfirmModal(false);
+            };
+
+            const handleSaveEntry = async () => {
+                if (!user || !activePlan) return;
+                setIsSaving(true);
+                const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                
+                let data = { kcal: 0, p: 0, f: 0, c: 0 };
+                if (entryType === 'diet') {
+                   const fullText = Object.values(dietForm).filter(v => !!v).join('，');
+                   try {
+                        const systemPrompt = "妳是一位專業營養師。請計算飲食清單的『總結』營養：熱量(kcal)、蛋白質(g)、脂肪(g)、碳水(g)。請只回傳 JSON 格式：{\"kcal\": 數值, \"p\": 數值, \"f\": 數值, \"c\": 數值}。";
+                        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${firebaseConfig.apiKey}`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ contents: [{ parts: [{ text: `內容：${fullText}` }] }], systemInstruction: { parts: [{ text: systemPrompt }] }, generationConfig: { responseMimeType: "application/json" } })
+                        });
+                        const result = await response.json();
+                        data = JSON.parse(result.candidates?.[0]?.content?.parts?.[0]?.text || "{}");
+                    } catch (e) { data = { kcal: 0, p: 0, f: 0, c: 0 }; }
+                }
+                
+                let updatedPlan = { ...activePlan };
+                if (editingId) {
+                    if (entryType === 'workout') {
+                        updatedPlan.workoutEntries = updatedPlan.workoutEntries.map(e => e.id === editingId ? { ...e, date: w_date, parts: w_parts, exercises: w_exercises, note: w_note } : e);
+                    } else {
+                        updatedPlan.dietEntries = updatedPlan.dietEntries.map(e => e.id === editingId ? { ...e, date: d_date, ...dietForm, water: Number(d_water), kcal: data.kcal, p: data.p, f: data.f, c: data.c } : e);
+                    }
+                } else {
+                    if (entryType === 'workout') {
+                        updatedPlan.workoutEntries = [{ id: Date.now(), date: w_date, time, parts: w_parts, note: w_note, exercises: w_exercises, weight: latestWeight }, ...(updatedPlan.workoutEntries || [])];
+                    } else {
+                        updatedPlan.dietEntries = [{ id: Date.now(), date: d_date, time, ...dietForm, water: Number(d_water), kcal: data.kcal, p: data.p, f: data.f, c: data.c }, ...(updatedPlan.dietEntries || [])];
+                    }
+                }
+                await updateDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'plans', activePlan.id), updatedPlan);
+                setIsSaving(false);
+                closeModal();
+            };
+
+            const handleCreatePlan = async () => {
+                if (!user || !newPlanTitle || !newPlanDate) return;
+                setIsSaving(true);
+                const planData = { title: newPlanTitle, targetDate: newPlanDate, baselineWeight: parseFloat(newPlanBaselineWeight), targetWeight: parseFloat(newPlanTargetWeight), workoutEntries: [], dietEntries: [] };
+                if (editingPlanId) {
+                    await updateDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'plans', editingPlanId), planData);
+                } else {
+                    const docRef = await addDoc(collection(db, 'artifacts', appId, 'users', user.uid, 'plans'), planData);
+                    await setDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'settings', 'profile'), { activePlanId: docRef.id }, { merge: true });
+                }
+                setIsSaving(false);
+                closeModal();
+                setView('home');
+            };
+
+            const handleSaveWeight = async (val) => {
+                if (!user || !activePlan) return;
+                const w = parseFloat(val); if (isNaN(w) || w <= 0) return;
+                setConfirmAnim(true);
+                const updated = { ...activePlan, workoutEntries: [{ id: Date.now(), date: new Date().toISOString().split('T')[0], weight: w, time: '早上', note: '今日稱重' }, ...(activePlan.workoutEntries || [])] };
+                await updateDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'plans', activePlan.id), updated);
+                setTimeout(() => { setConfirmAnim(false); setIsEditingWeight(false); }, 800);
+            };
+
+            // --- Auth & Sync ---
+            useEffect(() => {
+                const initAuth = async () => {
+                    if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) { await signInWithCustomToken(auth, __initial_auth_token); } 
+                    else { await signInAnonymously(auth); }
+                };
+                initAuth();
+                const unsubscribe = onAuthStateChanged(auth, setUser);
+                return () => unsubscribe();
+            }, []);
+
+            useEffect(() => {
+                if (!user) return;
+                const q = query(collection(db, 'artifacts', appId, 'users', user.uid, 'plans'));
+                const unsubPlans = onSnapshot(q, (snapshot) => { setPlans(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }))); });
+                const unsubSettings = onSnapshot(doc(db, 'artifacts', appId, 'users', user.uid, 'settings', 'profile'), (doc) => { if (doc.exists()) setActivePlanId(doc.data().activePlanId); });
+                return () => { unsubPlans(); unsubSettings(); };
+            }, [user]);
+
+            // --- 渲染卡片組件 ---
+            const renderDietCardComponent = (entry) => {
+                const totalMacros = (entry.p || 0) + (entry.f || 0) + (entry.c || 0) || 1;
+                return React.createElement('div', { key: entry.id, className: "premium-card p-4 margin-consistency text-[#040316]" },
+                    React.createElement('div', { className: "flex justify-between items-center mb-3 text-brand" },
+                        React.createElement('span', { className: "text-[12px] font-bold text-[#9caeba] flex items-center gap-1.5" }, React.createElement(Icon, { name: "clock", size: 12 }), entry.time),
+                        React.createElement('div', { className: "flex items-center -mr-2" },
+                            React.createElement('button', { onClick: () => handleEditRecord(entry, 'diet'), className: "touch-target text-[#9caeba] active:text-[#f9991a]" }, React.createElement(Icon, { name: "edit-3", size: 24 })),
+                            React.createElement('button', { onClick: () => confirmDelete('diet', entry.id), className: "touch-target text-[#9caeba] active:text-red-400" }, React.createElement(Icon, { name: "trash-2", size: 24 }))
+                        )
+                    ),
+                    React.createElement('div', { className: "space-y-4" },
+                        React.createElement('div', { className: "flex flex-wrap gap-2 text-brand" },
+                            ['breakfast', 'lunch', 'dinner', 'snacks'].map(meal => entry[meal] && React.createElement('div', { key: meal, className: "flex items-center gap-1.5 bg-gray-50 px-3 py-1.5 rounded-xl border border-gray-100/50" },
+                                React.createElement(Icon, { name: meal === 'breakfast' ? 'sun' : meal === 'lunch' ? 'sun-medium' : meal === 'dinner' ? 'moon' : 'coffee', size: 14, className: "text-[#9caeba]" }),
+                                React.createElement('span', { className: "text-[14px] font-bold leading-none" }, entry[meal])
+                            ))
+                        ),
+                        React.createElement('div', { className: "pt-2 border-t border-dashed border-gray-200 flex items-center justify-between text-[12px] font-bold text-[#5a6a7a] text-brand" },
+                            React.createElement('div', { className: "flex gap-3" }, React.createElement('span', { className: "text-[#f9991a]" }, `P ${entry.p}g`), React.createElement('span', { className: "text-[#9caeba]" }, `F ${entry.f}g`), React.createElement('span', null, `C ${entry.c}g`)),
+                            React.createElement('div', { className: "flex items-center gap-1.5 text-blue-400" }, React.createElement(Icon, { name: "droplets", size: 12 }), `${entry.water}cc`)
+                        ),
+                        React.createElement('div', { className: "flex items-center gap-4 text-brand" },
+                            React.createElement('div', { className: "nutrient-bar-bg flex-1" },
+                                React.createElement('div', { className: "bar-p", style: { width: `${((entry.p || 0) / totalMacros) * 100}%` } }),
+                                React.createElement('div', { className: "bar-f", style: { width: `${((entry.f || 0) / totalMacros) * 100}%` } }),
+                                React.createElement('div', { className: "bar-c", style: { width: `${((entry.c || 0) / totalMacros) * 100}%` } })
+                            ),
+                            React.createElement('div', { className: "text-[15px] font-bold whitespace-nowrap" }, `${entry.kcal} `, React.createElement('span', { className: "text-[10px] text-[#9caeba] uppercase tracking-tighter" }, "kcal"))
+                        )
+                    )
+                );
+            };
+
+            const renderWorkoutCardComponent = (entry) => React.createElement('div', { key: entry.id, className: "premium-card p-4 margin-consistency text-[#040316]" },
+                React.createElement('div', { className: "flex justify-between items-center mb-2 text-brand" },
+                    React.createElement('span', { className: "text-[12px] font-bold text-[#9caeba] flex items-center gap-1.5" }, React.createElement(Icon, { name: "clock", size: 12 }), entry.time),
+                    React.createElement('div', { className: "flex items-center -mr-2" },
+                        React.createElement('button', { onClick: () => handleEditRecord(entry, 'workout'), className: "touch-target text-[#9caeba] active:text-[#f9991a]" }, React.createElement(Icon, { name: "edit-3", size: 24 })),
+                        React.createElement('button', { onClick: () => confirmDelete('workout', entry.id), className: "touch-target text-[#9caeba] active:text-red-400" }, React.createElement(Icon, { name: "trash-2", size: 24 }))
+                    )
+                ),
+                React.createElement('div', { className: "space-y-3 text-brand" },
+                    React.createElement('div', { className: "space-y-2.5" }, entry.exercises?.map((ex, idx) => React.createElement('div', { key: idx, className: "flex justify-between items-center py-2.5 px-3 bg-orange-50/50 rounded-xl border border-orange-100/30" },
+                        React.createElement('span', { className: "text-[14px] font-bold" }, ex.name),
+                        React.createElement('span', { className: "text-[12px] font-bold text-[#f9991a] bg-white px-2 py-0.5 rounded-lg border border-orange-100 uppercase tracking-tight" }, `${ex.sets}組 / ${ex.reps}次`)
+                    ))),
+                    React.createElement('div', { className: "flex flex-wrap gap-1.5 pt-1" }, entry.parts?.map(p => React.createElement('span', { key: p, className: "text-[11px] font-bold bg-[#f2f4f7] text-[#9caeba] px-2.5 py-1 rounded-full uppercase tracking-widest" }, p))),
+                    entry.note && React.createElement('p', { className: "text-[13px] text-[#5a6a7a] italic mt-2 border-l-4 border-orange-100/50 pl-3 leading-relaxed bg-orange-50/20 py-2 rounded-r-lg" }, entry.note)
+                )
+            );
+
+            const groupedRecordsUI = useMemo(() => {
+                if (!activePlan) return null;
                 const entries = view === 'history' ? (activePlan.workoutEntries || []) : (activePlan.dietEntries || []);
                 const groups = entries.reduce((acc, entry) => {
                     if (!acc[entry.date]) acc[entry.date] = [];
                     acc[entry.date].push(entry);
                     return acc;
                 }, {});
-                return Object.keys(groups).sort((a, b) => new Date(b) - new Date(a)).map(date => ({
-                    date,
-                    items: groups[date].sort((a, b) => (b.time || '').localeCompare(a.time || ''))
-                }));
-            }, [activePlan, view]);
+                return Object.keys(groups).sort((a, b) => new Date(b) - new Date(a)).map(date => React.createElement('div', { key: date },
+                    React.createElement('div', { className: "timeline-date-chip margin-consistency" }, date === new Date().toISOString().split('T')[0] ? '今天' : date),
+                    groups[date].sort((a, b) => (b.time || '').localeCompare(a.time || '')).map(item => view === 'history' ? renderWorkoutCardComponent(item) : renderDietCardComponent(item))
+                ));
+            }, [activePlan, view, historyFilterDate]);
 
-            const nutrientInsight = useMemo(() => {
-                const t = getDayDietTotals(historyFilterDate);
-                if (t.kcal === 0) return "今天還沒有紀錄飲食喔 ✨";
-                return t.p > 60 ? "蛋白質充足！肌肉正在感謝妳！💪" : "比例不錯喔！繼續朝目標邁進！🌟";
-            }, [activePlan, historyFilterDate]);
-
-            const todayReinforcement = useMemo(() => DAILY_REINFORCEMENTS[new Date(historyFilterDate).getDate() % DAILY_REINFORCEMENTS.length || 0], [historyFilterDate]);
-
-            // --- 渲染卡片輔助 ---
-            const renderDietCard = (entry) => {
-                const totalMacros = (entry.p || 0) + (entry.f || 0) + (entry.c || 0) || 1;
-                return (
-                    <div key={entry.id} className="premium-card p-4 margin-consistency text-[#040316]">
-                        <div className="flex justify-between items-center mb-3">
-                            <span className="text-[12px] font-bold text-[#9caeba] flex items-center gap-1.5"><Icon name="clock" size={12}/>{entry.time}</span>
-                            <div className="flex items-center -mr-2">
-                                <button onClick={()=>handleEditRecord(entry, 'diet')} className="touch-target text-[#9caeba] active:text-[#f9991a] transition-all"><Icon name="edit-3" size={24}/></button>
-                                <button onClick={()=>confirmDelete('diet', entry.id)} className="touch-target text-[#9caeba] active:text-red-400 transition-all"><Icon name="trash-2" size={24}/></button>
-                            </div>
-                        </div>
-                        <div className="space-y-4">
-                            <div className="flex flex-wrap gap-2 text-brand">
-                                {['breakfast', 'lunch', 'dinner', 'snacks'].map(meal => entry[meal] && (
-                                    <div key={meal} className="flex items-center gap-1.5 bg-gray-50 px-3 py-1.5 rounded-xl border border-gray-100/50">
-                                        <Icon name={meal==='breakfast'?'sun':meal==='lunch'?'sun-medium':meal==='dinner'?'moon':'coffee'} size={14} className="text-[#9caeba]"/>
-                                        <span className="text-[14px] font-bold leading-none">{entry[meal]}</span>
-                                    </div>
-                                ))}
-                            </div>
-                            <div className="pt-2 border-t border-dashed border-gray-200 flex items-center justify-between text-[12px] font-bold text-[#5a6a7a] text-brand">
-                                <div className="flex gap-3"><span className="text-[#f9991a]">P {entry.p}g</span><span className="text-[#9caeba]">F {entry.f}g</span><span>C {entry.c}g</span></div>
-                                <div className="flex items-center gap-1.5 text-blue-400"><Icon name="droplets" size={12}/>{entry.water}cc</div>
-                            </div>
-                            <div className="flex items-center gap-4 text-brand">
-                                <div className="nutrient-bar-bg flex-1">
-                                    <div className="bar-p" style={{ width: `${((entry.p||0)/totalMacros)*100}%` }}></div>
-                                    <div className="bar-f" style={{ width: `${((entry.f||0)/totalMacros)*100}%` }}></div>
-                                    <div className="bar-c" style={{ width: `${((entry.c||0)/totalMacros)*100}%` }}></div>
-                                </div>
-                                <div className="text-[15px] font-bold whitespace-nowrap">{entry.kcal} <span className="text-[10px] text-[#9caeba] uppercase tracking-tighter">kcal</span></div>
-                            </div>
-                        </div>
-                    </div>
-                );
-            };
-
-            const renderWorkoutCard = (entry) => (
-                <div key={entry.id} className="premium-card p-4 margin-consistency text-[#040316]">
-                    <div className="flex justify-between items-center mb-2">
-                        <span className="text-[12px] font-bold text-[#9caeba] flex items-center gap-1.5"><Icon name="clock" size={12}/>{entry.time}</span>
-                        <div className="flex items-center -mr-2 text-brand">
-                            <button onClick={()=>handleEditRecord(entry, 'workout')} className="touch-target text-[#9caeba] active:text-[#f9991a]"><Icon name="edit-3" size={24}/></button>
-                            <button onClick={()=>confirmDelete('workout', entry.id)} className="touch-target text-[#9caeba] active:text-red-400"><Icon name="trash-2" size={24}/></button>
-                        </div>
-                    </div>
-                    <div className="space-y-3">
-                        <div className="space-y-2.5">
-                            {entry.exercises?.map((ex, idx) => (
-                                <div key={idx} className="flex justify-between items-center py-2.5 px-3 bg-orange-50/50 rounded-xl border border-orange-100/30 text-brand">
-                                    <span className="text-[14px] font-bold">{ex.name}</span>
-                                    <span className="text-[12px] font-bold text-[#f9991a] bg-white px-2 py-0.5 rounded-lg border border-orange-100 uppercase tracking-tight">{ex.sets}組 / {ex.reps}次</span>
-                                </div>
-                            ))}
-                        </div>
-                        <div className="flex flex-wrap gap-1.5 pt-1 text-brand">{entry.parts?.map(p => <span key={p} className="text-[11px] font-bold bg-[#f2f4f7] text-[#9caeba] px-2.5 py-1 rounded-full uppercase tracking-widest">{p}</span>)}</div>
-                        {entry.note && <p className="text-[13px] text-[#5a6a7a] italic mt-2 border-l-4 border-orange-100/50 pl-3 leading-relaxed bg-orange-50/20 py-2 rounded-r-lg">{entry.note}</p>}
-                    </div>
-                </div>
-            );
-
-            // --- 邏輯處理 ---
-            const closeModal = () => { 
-                setShowEntryModal(false); setShowPlanModal(false); setEditingPlanId(null); setEditingId(null);
-                setWNote(''); setWExercises([]); setWParts([]); setDietForm({ breakfast: '', lunch: '', dinner: '', snacks: '' });
-                setDWater(200); setIsSaving(false);
-            };
-
-            const handleHeaderPlusClick = () => {
-                if (view === 'plan' || !activePlan) {
-                    setEditingPlanId(null); setNewPlanTitle(''); setNewPlanDate('');
-                    setShowPlanModal(true);
-                } else {
-                    setEditingId(null); setEntryType(view === 'diet' ? 'diet' : 'workout');
-                    setShowEntryModal(true);
-                }
-            };
-
-            const handleEditPlan = (plan) => {
-                setEditingPlanId(plan.id); setNewPlanTitle(plan.title); setNewPlanDate(plan.targetDate);
-                setNewPlanBaselineWeight(plan.baselineWeight.toString()); setNewPlanTargetWeight(plan.targetWeight.toString());
-                setShowPlanModal(true);
-            };
-
-            const confirmDelete = (type, id, extra = null) => {
-                setConfirmAction({ type, id, extra });
-                setShowConfirmModal(true);
-            };
-
-            const executeDelete = () => {
-                if (!confirmAction) return;
-                const { type, id, extra } = confirmAction;
-                if (type === 'plan') {
-                    setPlans(plans.filter(p => p.id !== id));
-                    if (activePlanId === id) setActivePlanId(null);
-                } else if (type === 'workout' && activePlan) {
-                    setPlans(plans.map(p => p.id === activePlan.id ? { ...p, workoutEntries: p.workoutEntries.filter(e => e.id !== id) } : p));
-                } else if (type === 'diet' && activePlan) {
-                    setPlans(plans.map(p => p.id === activePlan.id ? { ...p, dietEntries: p.dietEntries.filter(e => e.id !== id) } : p));
-                } else if (type === 'quickFood') {
-                    setQuickFoods(prev => ({ ...prev, [extra]: prev[extra].filter(f => f !== id) }));
-                }
-                setShowConfirmModal(false);
-            };
-
-            const handleQuickFoodSelect = (meal, food) => {
-                setDietForm(p => ({ ...p, [meal]: p[meal] ? p[meal] + "、" + food : food }));
-            };
-
-            const handleSaveEntry = async () => {
-                if (!activePlan) return;
-                setIsSaving(true);
-                const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-                let updatedPlan = { ...activePlan };
-                if (editingId) {
-                    if (entryType === 'workout') {
-                        const newE = { id: editingId, date: w_date, time, parts: w_parts, note: w_note, exercises: w_exercises, weight: latestWeight };
-                        updatedPlan.workoutEntries = (updatedPlan.workoutEntries || []).map(e => e.id === editingId ? newE : e);
-                    } else {
-                        const fullText = Object.values(dietForm).filter(v => !!v).join('，');
-                        const data = await fetchBatchNutritionData(fullText);
-                        const newE = { id: editingId, date: d_date, time, ...dietForm, water: Number(d_water), kcal: data.kcal, p: data.p, f: data.f, c: data.c };
-                        updatedPlan.dietEntries = (updatedPlan.dietEntries || []).map(e => e.id === editingId ? newE : e);
-                    }
-                } else {
-                    const hasWorkoutData = w_exercises.length > 0 || w_note.trim() !== "";
-                    const hasDietData = Object.values(dietForm).some(v => v.trim() !== "") || d_water > 0;
-                    if (hasWorkoutData) {
-                        const newW = { id: Date.now(), date: w_date, time, parts: w_parts, note: w_note, exercises: w_exercises, weight: latestWeight };
-                        updatedPlan.workoutEntries = [newW, ...(updatedPlan.workoutEntries || [])];
-                    }
-                    if (hasDietData) {
-                        const fullText = Object.values(dietForm).filter(v => !!v).join('，');
-                        const data = await fetchBatchNutritionData(fullText);
-                        const newD = { id: Date.now() + 1, date: d_date, time, ...dietForm, water: Number(d_water), kcal: data.kcal, p: data.p, f: data.f, c: data.c };
-                        updatedPlan.dietEntries = [newD, ...(updatedPlan.dietEntries || [])];
-                    }
-                }
-                setPlans(plans.map(p => p.id === activePlan.id ? updatedPlan : p));
-                closeModal();
-            };
-
-            const handleCreatePlan = () => {
-                if (!newPlanTitle || !newPlanDate) return;
-                const id = editingPlanId || `p-${Date.now()}`;
-                const p = editingPlanId 
-                  ? { ...plans.find(x => x.id === id), title: newPlanTitle, targetDate: newPlanDate, baselineWeight: parseFloat(newPlanBaselineWeight), targetWeight: parseFloat(newPlanTargetWeight) }
-                  : { id, title: newPlanTitle, targetDate: newPlanDate, baselineWeight: parseFloat(newPlanBaselineWeight), targetWeight: parseFloat(newPlanTargetWeight), workoutEntries: [], dietEntries: [] };
-                if (editingPlanId) setPlans(plans.map(x => x.id === id ? p : x)); else { setPlans([p, ...plans]); setActivePlanId(id); }
-                closeModal(); setView('home');
-            };
-
-            const handleSaveWeight = (val) => {
-                const w = parseFloat(val); if (isNaN(w) || w <= 0) return;
-                setConfirmAnim(true);
-                setPlans(plans.map(p => p.id === activePlan.id ? { ...p, workoutEntries: [{ id: Date.now(), date: new Date().toISOString().split('T')[0], weight: w, note: '今日稱重' }, ...(p.workoutEntries || [])] } : p));
-                setTimeout(() => { setConfirmAnim(false); setIsEditingWeight(false); }, 800);
-            };
-
-            const handleAddExercise = (name) => setWExercises(p => p.some(e => e.name === name) ? p.filter(e => e.name !== name) : [...p, { name, sets: 3, reps: 12 }]);
-            const updateEx = (name, field, delta) => setWExercises(p => p.map(ex => ex.name === name ? { ...ex, [field]: Math.max(1, ex[field] + delta) } : ex));
-            
-            const watchYoutube = (name) => {
-                window.open(`https://www.youtube.com/results?search_query=${encodeURIComponent(name)}+pilates+tutorial`, '_blank');
-            };
-
-            return (
-                <div id="root">
-                    <header className={`z-30 transition-all ${view === 'home' ? 'p-4' : 'sticky top-0 bg-white/60 backdrop-blur-xl border-b border-gray-100/50 px-4 h-[64px] flex items-center'}`}>
-                        {view === 'home' ? (
-                            <div className="space-y-4 w-full text-[#5a6a7a]">
-                                <div className="flex justify-between items-center">
-                                    <div className="flex items-center gap-3 text-brand">
-                                        <div className="w-14 h-14 rounded-full border-2 border-white shadow-md overflow-hidden bg-white"><img src="https://raw.githubusercontent.com/Minpi-0/Health-Tracker/main/img/avatar-myself.svg" alt="avatar" /></div>
-                                        <div className="flex flex-col">
-                                            <h2 className="text-[20px] font-bold leading-tight">Hello Min!</h2>
-                                            {activePlan && (
-                                                <div className="text-[14px] font-medium text-[#94a3b8] flex items-center">目前 <span className="text-[#f9991a] mx-1 font-bold">{latestWeight}</span><span className="mx-1 opacity-30">|</span> 初始 {activePlan?.baselineWeight}</div>
-                                            )}
-                                        </div>
-                                    </div>
-                                    {activePlan && (
-                                        <div className="flex gap-2.5">
-                                            <div className="status-circle bg-white text-[#f9991a] font-bold">{activePlan?.targetWeight}</div>
-                                            <div className="status-circle bg-[#f9991a] text-white font-bold">-{daysLeft}</div>
-                                        </div>
-                                    )}
-                                </div>
-                                <div className="bg-white/30 backdrop-blur-md border border-white/20 rounded-[16px] p-4 shadow-sm text-brand text-brand">
-                                    <div className="flex justify-between items-center mb-3 text-[11px] font-bold uppercase tracking-wider">
-                                        <span className="text-[14px] text-[#f9991a] font-bold">{currentMonthLabel}</span>
-                                        <div className="flex gap-4 text-brand"><div onClick={()=>setWeekOffset(v=>v-1)} className="cursor-pointer active:scale-90"><Icon name="chevron-left" size={16}/></div><div onClick={()=>setWeekOffset(v=>v+1)} className="cursor-pointer active:scale-90"><Icon name="chevron-right" size={16}/></div></div>
-                                    </div>
-                                    <div className="flex justify-between items-center px-1 text-brand">
-                                        {weekDaysList.map(day => {
-                                            const { workout, diet } = dateStats(day.date);
-                                            const isSelected = historyFilterDate === day.date;
-                                            return (
-                                                <div key={day.date} className="flex flex-col items-center gap-1.5 cursor-pointer" onClick={() => setHistoryFilterDate(day.date)}>
-                                                    <span className="text-[10px] font-bold text-[#9caeba] text-brand">{day.label}</span>
-                                                    <div className={`w-[42px] h-[42px] rounded-xl flex items-center justify-center font-bold text-[14px] transition-all ${isSelected ? 'border-2 border-[#f9991a] text-[#f9991a] bg-white shadow-sm' : (workout||diet)?'bg-[#f9991a] text-white':'bg-gray-100/50 text-[#9caeba]'}`}>{day.num}</div>
-                                                </div>
-                                            );
-                                        })}
-                                    </div>
-                                </div>
-                            </div>
-                        ) : (
-                            <div className="flex-1 flex items-center justify-between relative h-full">
-                                <div className="w-10"></div>
-                                <h1 className="absolute left-1/2 -translate-x-1/2 text-[18px] font-bold text-[#5a6a7a] whitespace-nowrap">{view==='plan'?'計畫管理':view==='history'?'運動回顧':'飲食統計'}</h1>
-                                <button onClick={handleHeaderPlusClick} className="header-plus-circle relative z-10 text-brand text-brand"><Icon name="plus" size={24} /></button>
-                            </div>
-                        )}
-                    </header>
-
-                    <main className="flex-1 overflow-y-auto px-4 pt-4 no-scrollbar pb-[120px]">
-                        {view === 'home' ? (
-                            activePlan ? (
-                                <>
-                                    <section className="premium-card p-4 flex items-center justify-between text-[#040316] margin-consistency">
-                                        <p className="text-[16px] font-bold text-[#7a8b9a]">早晨的我</p>
-                                        <div className={`flex-1 mx-4 bg-[#f2f7ff] rounded-[16px] h-10 flex items-center justify-center transition-all ${confirmAnim ? 'scale-105 bg-orange-50 shadow-inner' : ''}`}>
-                                            {isEditingWeight ? <input autoFocus type="number" step="0.1" value={w_weight} onChange={e=>setWWeight(e.target.value)} onBlur={()=>handleSaveWeight(w_weight)} className="bg-transparent w-full text-center text-[18px] font-bold outline-none" /> : <p className="text-[18px] font-bold">{latestWeight}<span className="text-[14px] font-bold text-[#9caeba] ml-1">kg</span></p>}
-                                        </div>
-                                        {!isEditingWeight && <div onClick={()=>setIsEditingWeight(true)} className="cursor-pointer p-1 text-[#9caeba]"><Icon name="edit-3" size={18} /></div>}
-                                    </section>
-                                    <section className="premium-card p-5 shadow-sm relative overflow-hidden margin-consistency" style={{ backgroundImage: `url('https://raw.githubusercontent.com/Minpi-0/Health-Tracker/main/img/bg-mission.svg')`, backgroundSize: 'cover', backgroundPosition: 'center', border: 'none' }}>
-                                        <div className="relative z-10 flex flex-col gap-3 text-[#040316]">
-                                            <p className="text-[13px] font-bold text-[#5a6a7a]">今日挑戰！</p>
-                                            <div className="flex items-center gap-3 text-brand"><h2 className="text-[24px] font-bold text-[#f9991a] leading-none text-brand">{todayReinforcement.name}</h2><span className="px-3 py-1 bg-[#fff7ed] text-[#f9991a] text-[12px] font-bold rounded-lg border border-orange-100 text-brand">12x3組</span></div>
-                                            <p className="text-[14px] text-[#5a6a7a] leading-relaxed font-medium text-brand">{todayReinforcement.explanation}</p>
-                                            <div className="flex gap-3 pt-2 text-brand text-brand">
-                                                <button onClick={()=>window.open(`https://www.youtube.com/results?search_query=${todayReinforcement.name}`, '_blank')} className="flex-1 h-11 border-2 border-[#f9991a] text-[#f9991a] bg-white/80 rounded-full font-bold text-[14px] active:scale-95 transition-all text-brand">學動作</button>
-                                                <button onClick={()=>{setEntryType('workout'); setEditingId(null); setWNote(`補強：${todayReinforcement.name}`); setShowEntryModal(true);}} className="flex-1 h-11 bg-[#f9991a] text-white rounded-full font-bold text-[14px] shadow-lg active:scale-95 transition-all text-brand">打卡</button>
-                                            </div>
-                                        </div>
-                                    </section>
-                                    <div className="grid grid-cols-2 gap-4 margin-consistency text-brand text-brand text-brand">
-                                        <button onClick={()=>setView('history')} className="premium-card p-5 flex flex-col items-center gap-3 active:scale-95 shadow-sm">
-                                            <Icon name="dumbbell" size={26} className="text-[#f9991a]"/>
-                                            <p className="text-[16px] font-bold text-[#7a8b9a]">訓練日誌</p>
-                                        </button>
-                                        <button onClick={()=>setView('diet')} className="premium-card p-5 flex flex-col items-center gap-3 active:scale-95 shadow-sm">
-                                            <Icon name="utensils" size={26} className="text-[#5a6a7a]"/>
-                                            <p className="text-[16px] font-bold text-[#7a8b9a]">飲食紀錄</p>
-                                        </button>
-                                    </div>
-                                </>
-                            ) : (
-                                <div className="flex-1 flex flex-col items-center justify-center min-h-[460px] relative overflow-hidden bg-transparent">
-                                    <div className="flex flex-col items-center gap-8 relative z-20 text-[#040316] text-brand text-brand text-brand"><h2 className="text-[16px] font-bold text-[#334155] tracking-wide text-center">打造妳的專屬計畫</h2><button onClick={handleHeaderPlusClick} className="primary-btn px-20 shadow-xl text-white active:scale-95 transition-all text-brand text-brand">啟動變美之旅</button></div>
-                                    <div className="absolute bottom-0 left-0 right-0 h-[220px] pointer-events-none mb-[-50px] z-10 flex items-center justify-center text-brand text-brand"><lottie-player src="https://raw.githubusercontent.com/Minpi-0/Health-Tracker/main/img/Sunrise%20-%20Breathe%20in%20Breathe%20out.json" background="transparent" speed="1" loop autoplay style={{ width: '100%', height: '100%' }}></lottie-player></div>
-                                </div>
+            // --- 返回 JSX ---
+            return React.createElement('div', { id: "root" },
+                // Header
+                React.createElement('header', { className: `z-30 transition-all ${view === 'home' ? 'p-4' : 'sticky top-0 bg-white/60 backdrop-blur-xl border-b border-gray-100/50 px-4 h-[64px] flex items-center'}` },
+                    view === 'home' ? React.createElement('div', { className: "space-y-4 w-full text-[#5a6a7a]" },
+                        React.createElement('div', { className: "flex justify-between items-center" },
+                            React.createElement('div', { className: "flex items-center gap-3 text-brand" },
+                                React.createElement('div', { className: "w-14 h-14 rounded-full border-2 border-white shadow-md overflow-hidden bg-white" }, React.createElement('img', { src: "https://raw.githubusercontent.com/Minpi-0/Health-Tracker/main/img/avatar-myself.svg", alt: "avatar" })),
+                                React.createElement('div', { className: "flex flex-col" },
+                                    React.createElement('h2', { className: "text-[20px] font-bold leading-tight" }, "Hello Min!"),
+                                    activePlan && React.createElement('div', { className: "text-[14px] font-medium text-[#94a3b8] flex items-center" }, "目前 ", React.createElement('span', { className: "text-[#f9991a] mx-1 font-bold" }, latestWeight), React.createElement('span', { className: "mx-1 opacity-30" }, "|"), " 初始 ", activePlan.baselineWeight)
+                                )
+                            ),
+                            activePlan && React.createElement('div', { className: "flex gap-2.5" },
+                                React.createElement('div', { className: "status-circle bg-white text-[#f9991a] font-bold" }, activePlan.targetWeight),
+                                React.createElement('div', { className: "status-circle bg-[#f9991a] text-white font-bold" }, `-${daysLeft}`)
                             )
-                        ) : (view === 'history' || view === 'diet') ? (
-                            <div className="space-y-0 text-brand">
-                                <div className="premium-card p-5 bg-white shadow-md text-[#040316] space-y-4 margin-consistency text-brand">
-                                    <div className="flex justify-between items-center text-brand">
-                                        <span className="text-[12px] font-bold text-[#9caeba] uppercase tracking-widest">{view === 'history' ? '訓練摘要' : '營養摘要'}</span>
-                                        <span className="text-[14px] font-bold text-blue-400 flex items-center gap-1"><Icon name={view === 'history'?'dumbbell':'droplets'} size={14}/>{view === 'history' ? `${getDayWorkoutTotals(historyFilterDate).count} 筆` : `${getDayDietTotals(historyFilterDate).water} cc`}</span>
-                                    </div>
-                                    
-                                    {/* 訓練摘要 vs 營養摘要：要求運動分頁與訓練有關 */}
-                                    {view === 'history' ? (
-                                        <div className="grid grid-cols-3 gap-2 text-brand">
-                                            <div className="bg-orange-50/50 rounded-xl p-3 flex flex-col items-center border border-orange-100/50"><span className="text-[10px] font-bold text-[#f9991a] uppercase mb-1 text-center">動作數</span><span className="text-[15px] font-bold">{getDayWorkoutTotals(historyFilterDate).moves}</span></div>
-                                            <div className="bg-blue-50/50 rounded-xl p-3 flex flex-col items-center border border-blue-100 text-brand"><span className="text-[10px] font-bold text-[#5a6a7a] uppercase mb-1 text-center text-brand text-brand">部位數</span><span className="text-[15px] font-bold">{getDayWorkoutTotals(historyFilterDate).parts}</span></div>
-                                            <div className="bg-gray-50 rounded-xl p-3 flex flex-col items-center border border-gray-100 text-brand"><span className="text-[10px] font-bold text-[#9caeba] uppercase mb-1 text-center text-brand text-brand">狀態</span><span className="text-[15px] font-bold">Good</span></div>
-                                        </div>
-                                    ) : (
-                                        <div className="grid grid-cols-4 gap-1.5 text-brand">
-                                            <div className="bg-orange-50/50 rounded-xl p-2.5 flex flex-col items-center border border-orange-100/50 text-brand"><span className="text-[10px] font-bold text-[#f9991a] mb-1 text-brand text-brand">熱量</span><span className="text-[14px] font-bold">{getDayDietTotals(historyFilterDate).kcal}</span></div>
-                                            <div className="bg-blue-50/50 rounded-xl p-2.5 flex flex-col items-center border border-blue-100 text-brand text-brand"><span className="text-[10px] font-bold text-[#5a6a7a] mb-1">蛋白</span><span className="text-[14px] font-bold">{getDayDietTotals(historyFilterDate).p}g</span></div>
-                                            <div className="bg-gray-50 rounded-xl p-2.5 flex flex-col items-center border border-gray-100 text-brand"><span className="text-[10px] font-bold text-[#9caeba] mb-1">脂肪</span><span className="text-[14px] font-bold">{getDayDietTotals(historyFilterDate).f}g</span></div>
-                                            <div className="bg-gray-50 rounded-xl p-2.5 flex flex-col items-center border border-gray-100 text-brand"><span className="text-[10px] font-bold text-[#9caeba] mb-1">碳水</span><span className="text-[14px] font-bold">{getDayDietTotals(historyFilterDate).c}g</span></div>
-                                        </div>
-                                    )}
+                        ),
+                        React.createElement('div', { className: "bg-white/30 backdrop-blur-md border border-white/20 rounded-[16px] p-4 shadow-sm" },
+                            React.createElement('div', { className: "flex justify-between items-center mb-3 text-[11px] font-bold uppercase tracking-wider text-brand" },
+                                React.createElement('span', { className: "text-[14px] text-[#f9991a] font-bold" }, currentMonthLabel),
+                                React.createElement('div', { className: "flex gap-4" }, 
+                                    React.createElement('div', { onClick: () => setWeekOffset(v => v - 1), className: "cursor-pointer active:scale-90" }, React.createElement(Icon, { name: "chevron-left", size: 16 })), 
+                                    React.createElement('div', { onClick: () => setWeekOffset(v => v + 1), className: "cursor-pointer active:scale-90" }, React.createElement(Icon, { name: "chevron-right", size: 16 }))
+                                )
+                            ),
+                            React.createElement('div', { className: "flex justify-between items-center px-1 text-brand" }, weekDaysList.map(day => {
+                                const { workout, diet } = dateStats(day.date);
+                                const isSelected = historyFilterDate === day.date;
+                                return React.createElement('div', { key: day.date, className: "flex flex-col items-center gap-1.5 cursor-pointer", onClick: () => setHistoryFilterDate(day.date) },
+                                    React.createElement('span', { className: "text-[10px] font-bold text-[#9caeba]" }, day.label),
+                                    React.createElement('div', { className: `w-[42px] h-[42px] rounded-xl flex items-center justify-center font-bold text-[14px] transition-all ${isSelected ? 'border-2 border-[#f9991a] text-[#f9991a] bg-white shadow-sm' : (workout || diet) ? 'bg-[#f9991a] text-white' : 'bg-gray-100/50 text-[#9caeba]'}` }, day.num)
+                                );
+                            }))
+                        )
+                    ) : React.createElement('div', { className: "flex-1 flex items-center justify-between relative h-full text-brand" },
+                        React.createElement('div', { className: "w-10 text-brand" }),
+                        React.createElement('h1', { className: "absolute left-1/2 -translate-x-1/2 text-[18px] font-bold text-[#5a6a7a] whitespace-nowrap" }, view === 'plan' ? '計畫管理' : view === 'history' ? '運動回顧' : '飲食統計'),
+                        React.createElement('button', { onClick: handleHeaderPlusClick, className: "header-plus-circle relative z-10 text-brand" }, React.createElement(Icon, { name: "plus", size: 24 }))
+                    )
+                ),
 
-                                    <div className="bg-[#f2f4f7] p-3 rounded-xl text-brand text-brand text-brand"><p className="text-[12px] italic font-medium text-[#5a6a7a]">「{nutrientInsight}」</p></div>
-                                </div>
-                                {groupedRecords.length > 0 ? groupedRecords.map(group => (
-                                    <div key={group.date}>
-                                        <div className="timeline-date-chip margin-consistency">{group.date === new Date().toISOString().split('T')[0] ? '今天' : group.date}</div>
-                                        {group.items.map(item => view === 'history' ? renderWorkoutCard(item) : renderDietCard(item))}
-                                    </div>
-                                )) : <div className="py-20 text-center opacity-40 text-[#9caeba] text-brand text-brand"><Icon name="calendar-range" size={48}/><p className="font-bold text-[14px]">目前尚無紀錄數據</p></div>}
-                            </div>
-                        ) : view === 'plan' ? (
-                            <div className="space-y-0 text-brand">
-                                {plans.map(p => (
-                                    <div key={p.id} className={`premium-card p-5 transition-all text-[#040316] margin-consistency shadow-sm border-transparent text-brand`}>
-                                        <div className="flex justify-between items-start mb-4 text-brand">
-                                            <div className="flex flex-col gap-1 text-brand text-brand">
-                                                <h3 className="text-[18px] font-bold tracking-tight text-brand">{p.title}</h3>
-                                                <div className="flex items-center gap-2 text-[14px] font-bold text-[#9caeba] text-brand"><Icon name="calendar" size={12} /> {p.targetDate} 截止</div>
-                                            </div>
-                                            <div className="flex gap-1 -mr-2 text-brand">
-                                                <button onClick={()=>handleEditPlan(p)} className="touch-target text-[#9caeba] active:text-[#f9991a] transition-all text-brand"><Icon name="edit-3" size={24}/></button>
-                                                <button onClick={()=>confirmDelete('plan', p.id)} className="touch-target text-[#9caeba] active:text-red-400 transition-all text-brand text-brand text-brand"><Icon name="trash-2" size={24}/></button>
-                                            </div>
-                                        </div>
-                                        <div className="bg-blue-50/50 rounded-[12px] p-4 mb-4 flex items-center justify-between border border-white/40 text-[14px] text-brand text-brand">
-                                            <div className="flex flex-col items-center flex-1 text-brand text-brand text-brand text-brand"><span className="text-[14px] font-bold text-[#9caeba] uppercase mb-1">起始</span><span className="font-bold text-[#5a6a7a]">{p.baselineWeight} kg</span></div>
-                                            <Icon name="chevron-right" size={16} className="text-[#9caeba] opacity-30 mx-2 text-brand" />
-                                            <div className="flex flex-col items-center flex-1 text-brand text-brand text-brand text-brand"><span className="text-[14px] font-bold text-[#f9991a] uppercase mb-1">目標</span><span className="font-bold text-[#f9991a]">{p.targetWeight} kg</span></div>
-                                        </div>
-                                        {activePlanId!==p.id ? <button onClick={()=>{setActivePlanId(p.id);setView('home');}} className="primary-btn w-full shadow-sm text-white font-bold tracking-widest uppercase text-brand">啟動計畫</button> : <div className="flex items-center justify-center gap-2 text-[#f9991a] font-bold text-[14px] py-2 bg-orange-50 rounded-[12px] text-brand"><Icon name="check-circle" size={16} /> 目前執行中</div>}
-                                    </div>
-                                ))}
-                            </div>
-                        ) : null}
-                    </main>
+                // Main
+                React.createElement('main', { className: "flex-1 overflow-y-auto px-4 pt-4 no-scrollbar pb-[120px]" },
+                    activePlanId ? (
+                        (view === 'home') ? React.createElement(React.Fragment, null,
+                            React.createElement('section', { className: "premium-card p-4 flex items-center justify-between text-[#040316] margin-consistency" },
+                                React.createElement('p', { className: "text-[16px] font-bold text-[#7a8b9a]" }, "早晨的我"),
+                                React.createElement('div', { className: `flex-1 mx-4 bg-[#f2f7ff] rounded-[16px] h-10 flex items-center justify-center transition-all ${confirmAnim ? 'scale-105 bg-orange-50 shadow-inner' : ''}` },
+                                    isEditingWeight ? React.createElement('input', { autoFocus: true, type: "number", step: "0.1", value: w_weight, onChange: e => setWWeight(e.target.value), onBlur: () => handleSaveWeight(w_weight), className: "bg-transparent w-full text-center text-[18px] font-bold outline-none" }) : React.createElement('p', { className: "text-[18px] font-bold" }, `${latestWeight} `, React.createElement('span', { className: "text-[14px] font-bold text-[#9caeba] ml-1" }, "kg"))
+                                ),
+                                !isEditingWeight && React.createElement('div', { onClick: () => setIsEditingWeight(true), className: "cursor-pointer p-1 text-[#9caeba]" }, React.createElement(Icon, { name: "edit-3", size: 18 }))
+                            ),
+                            React.createElement('section', { className: "premium-card p-5 shadow-sm relative overflow-hidden margin-consistency", style: { backgroundImage: `url('https://raw.githubusercontent.com/Minpi-0/Health-Tracker/main/img/bg-mission.svg')`, backgroundSize: 'cover', backgroundPosition: 'center', border: 'none' } },
+                                React.createElement('div', { className: "relative z-10 flex flex-col gap-3 text-[#040316]" },
+                                    React.createElement('p', { className: "text-[13px] font-bold text-[#5a6a7a]" }, "今日挑戰！"),
+                                    React.createElement('div', { className: "flex items-center gap-3 text-brand" }, React.createElement('h2', { className: "text-[24px] font-bold text-[#f9991a] leading-none text-brand" }, todayReinforcement.name), React.createElement('span', { className: "px-3 py-1 bg-[#fff7ed] text-[#f9991a] text-[12px] font-bold rounded-lg border border-orange-100" }, "12x3組")),
+                                    React.createElement('p', { className: "text-[14px] text-[#5a6a7a] leading-relaxed font-medium" }, todayReinforcement.explanation),
+                                    React.createElement('div', { className: "flex gap-3 pt-2 text-brand" },
+                                        React.createElement('button', { onClick: () => window.open(`https://www.youtube.com/results?search_query=${encodeURIComponent(todayReinforcement.name)}`, '_blank'), className: "flex-1 h-11 border-2 border-[#f9991a] text-[#f9991a] bg-white/80 rounded-full font-bold text-[14px] active:scale-95" }, "學動作"),
+                                        React.createElement('button', { onClick: () => { setEntryType('workout'); setEditingId(null); setWNote(`補強：${todayReinforcement.name}`); setShowEntryModal(true); }, className: "flex-1 h-11 bg-[#f9991a] text-white rounded-full font-bold text-[14px] shadow-lg active:scale-95" }, "打卡")
+                                    )
+                                )
+                            ),
+                            React.createElement('div', { className: "grid grid-cols-2 gap-4 margin-consistency text-brand" },
+                                React.createElement('button', { onClick: () => setView('history'), className: "premium-card p-5 flex flex-col items-center gap-3 active:scale-95 shadow-sm" }, React.createElement(Icon, { name: "dumbbell", size: 26, className: "text-[#f9991a]" }), React.createElement('p', { className: "text-[16px] font-bold text-[#7a8b9a]" }, "訓練日誌")),
+                                React.createElement('button', { onClick: () => setView('diet'), className: "premium-card p-5 flex flex-col items-center gap-3 active:scale-95 shadow-sm" }, React.createElement(Icon, { name: "utensils", size: 26, className: "text-[#5a6a7a]" }), React.createElement('p', { className: "text-[16px] font-bold text-[#7a8b9a]" }, "飲食紀錄"))
+                            )
+                        ) : (view === 'history' || view === 'diet') ? React.createElement('div', { className: "space-y-0 text-brand" },
+                            React.createElement('div', { className: "premium-card p-5 bg-white shadow-md text-[#040316] space-y-4 margin-consistency" },
+                                React.createElement('div', { className: "flex justify-between items-center text-brand" },
+                                    React.createElement('span', { className: "text-[12px] font-bold text-[#9caeba] uppercase tracking-widest" }, view === 'history' ? '訓練摘要' : '營養摘要'),
+                                    React.createElement('span', { className: "text-[14px] font-bold text-blue-400 flex items-center gap-1" }, React.createElement(Icon, { name: view === 'history' ? 'dumbbell' : 'droplets', size: 14 }), view === 'history' ? `${getDayWorkoutTotals(historyFilterDate).count} 筆` : `${getDayDietTotals(historyFilterDate).water} cc`)
+                                ),
+                                view === 'history' ? React.createElement('div', { className: "grid grid-cols-3 gap-2 text-brand" },
+                                    React.createElement('div', { className: "bg-orange-50/50 rounded-xl p-3 flex flex-col items-center border border-orange-100/50" }, React.createElement('span', { className: "text-[10px] font-bold text-[#f9991a] uppercase mb-1" }, "動作數"), React.createElement('span', { className: "text-[15px] font-bold" }, getDayWorkoutTotals(historyFilterDate).moves)),
+                                    React.createElement('div', { className: "bg-blue-50/50 rounded-xl p-3 flex flex-col items-center border border-blue-100" }, React.createElement('span', { className: "text-[10px] font-bold text-[#5a6a7a] uppercase mb-1" }, "部位數"), React.createElement('span', { className: "text-[15px] font-bold" }, getDayWorkoutTotals(historyFilterDate).parts)),
+                                    React.createElement('div', { className: "bg-gray-50 rounded-xl p-3 flex flex-col items-center border border-gray-100" }, React.createElement('span', { className: "text-[10px] font-bold text-[#9caeba] uppercase mb-1" }, "狀態"), React.createElement('span', { className: "text-[15px] font-bold" }, "Good"))
+                                ) : React.createElement('div', { className: "grid grid-cols-4 gap-1.5 text-brand" },
+                                    React.createElement('div', { className: "bg-orange-50/50 rounded-xl p-2.5 flex flex-col items-center border border-orange-100/50" }, React.createElement('span', { className: "text-[10px] font-bold text-[#f9991a] mb-1" }, "熱量"), React.createElement('span', { className: "text-[14px] font-bold" }, getDayDietTotals(historyFilterDate).kcal)),
+                                    React.createElement('div', { className: "bg-blue-50/50 rounded-xl p-2.5 flex flex-col items-center border border-blue-100" }, React.createElement('span', { className: "text-[10px] font-bold text-[#5a6a7a] mb-1" }, "蛋白"), React.createElement('span', { className: "text-[14px] font-bold" }, `${getDayDietTotals(historyFilterDate).p}g`)),
+                                    React.createElement('div', { className: "bg-gray-50 rounded-xl p-2.5 flex flex-col items-center border border-gray-100" }, React.createElement('span', { className: "text-[10px] font-bold text-[#9caeba] mb-1" }, "脂肪"), React.createElement('span', { className: "text-[14px] font-bold" }, `${getDayDietTotals(historyFilterDate).f}g`)),
+                                    React.createElement('div', { className: "bg-gray-50 rounded-xl p-2.5 flex flex-col items-center border border-gray-100" }, React.createElement('span', { className: "text-[10px] font-bold text-[#9caeba] mb-1" }, "碳水"), React.createElement('span', { className: "text-[14px] font-bold" }, `${getDayDietTotals(historyFilterDate).c}g`))
+                                ),
+                                React.createElement('div', { className: "bg-[#f2f4f7] p-3 rounded-xl text-brand" }, React.createElement('p', { className: "text-[12px] italic font-medium text-[#5a6a7a]" }, `「${nutrientInsight}」`))
+                            ),
+                            groupedRecordsUI
+                        ) : (view === 'plan') ? React.createElement('div', { className: "space-y-0 text-brand" }, plans.map(p => React.createElement('div', { key: p.id, className: "premium-card p-5 margin-consistency shadow-sm text-[#040316]" },
+                            React.createElement('div', { className: "flex justify-between items-start mb-4" },
+                                React.createElement('div', { className: "flex flex-col gap-1" }, React.createElement('h3', { className: "text-[18px] font-bold tracking-tight" }, p.title), React.createElement('div', { className: "flex items-center gap-2 text-[14px] font-bold text-[#9caeba]" }, React.createElement(Icon, { name: "calendar", size: 12 }), `${p.targetDate} 截止`)),
+                                React.createElement('div', { className: "flex gap-1 -mr-2" }, React.createElement('button', { onClick: () => handleEditPlan(p), className: "touch-target text-[#9caeba] active:text-[#f9991a]" }, React.createElement(Icon, { name: "edit-3", size: 24 })), React.createElement('button', { onClick: () => confirmDelete('plan', p.id), className: "touch-target text-[#9caeba] active:text-red-400" }, React.createElement(Icon, { name: "trash-2", size: 24 })))
+                            ),
+                            React.createElement('div', { className: "bg-blue-50/50 rounded-[12px] p-4 mb-4 flex items-center justify-between border border-white/40 text-[14px]" },
+                                React.createElement('div', { className: "flex flex-col items-center flex-1" }, React.createElement('span', { className: "text-[14px] font-bold text-[#9caeba] uppercase mb-1" }, "起始"), React.createElement('span', { className: "font-bold text-[#5a6a7a]" }, `${p.baselineWeight} kg`)),
+                                React.createElement(Icon, { name: "chevron-right", size: 16, className: "text-[#9caeba] opacity-30 mx-2" }),
+                                React.createElement('div', { className: "flex flex-col items-center flex-1" }, React.createElement('span', { className: "text-[14px] font-bold text-[#f9991a] uppercase mb-1" }, "目標"), React.createElement('span', { className: "font-bold text-[#f9991a]" }, `${p.targetWeight} kg`))
+                            ),
+                            activePlanId !== p.id ? React.createElement('button', { onClick: async () => { await setDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'settings', 'profile'), { activePlanId: p.id }, { merge: true }); setView('home'); }, className: "primary-btn w-full text-white font-bold" }, "啟動計畫") : React.createElement('div', { className: "flex items-center justify-center gap-2 text-[#f9991a] font-bold text-[14px] py-2 bg-orange-50 rounded-[12px]" }, React.createElement(Icon, { name: "check-circle", size: 16 }), " 目前執行中")
+                        ))) : null
+                    ) : React.createElement('div', { className: "flex-1 flex flex-col items-center justify-center min-h-[460px] relative overflow-hidden bg-transparent text-brand" },
+                        React.createElement('div', { className: "flex flex-col items-center gap-8 relative z-20 text-[#040316]" }, React.createElement('h2', { className: "text-[16px] font-bold text-[#334155] tracking-wide text-center" }, "打造妳的專屬計畫"), React.createElement('button', { onClick: handleHeaderPlusClick, className: "primary-btn px-20 shadow-xl text-white active:scale-95" }, "啟動變美之旅")),
+                        React.createElement('div', { className: "absolute bottom-0 left-0 right-0 h-[220px] pointer-events-none mb-[-50px] z-10 flex items-center justify-center" }, React.createElement('lottie-player', { src: "https://raw.githubusercontent.com/Minpi-0/Health-Tracker/main/img/Sunrise%20-%20Breathe%20in%20Breathe%20out.json", background: "transparent", speed: "1", loop: true, autoplay: true, style: { width: '100%', height: '100%' } }))
+                    )
+                ),
 
-                    <nav className="island-navbar text-[#9caeba] text-brand text-brand text-brand">
-                        <div className="flex flex-1 justify-around items-center">
-                            <button onClick={()=>setView('home')} className={`flex flex-col items-center gap-0.5 transition-all ${view==='home'?'text-[#f9991a] scale-105':'opacity-60'}`}><Icon name="home" size={24} /><span className="text-[12px] font-bold tracking-tight text-brand">首頁</span></button>
-                            <button onClick={()=>setView('history')} className={`flex flex-col items-center gap-0.5 transition-all ${view==='history'?'text-[#f9991a] scale-105':'opacity-60'}`}><Icon name="activity" size={24} /><span className="text-[12px] font-bold tracking-tight text-brand text-brand">運動</span></button>
-                        </div>
-                        {/* 智慧主按鈕 */}
-                        <button onClick={handleHeaderPlusClick} className="glow-action-btn shadow-xl active:scale-90 text-white font-bold tracking-widest text-[16px] text-brand">
-                            {(!activePlan) ? "GO!" : <Icon name="plus" size={32} className="text-white" />}
-                        </button>
-                        <div className="flex flex-1 justify-around items-center text-brand text-brand">
-                            <button onClick={()=>setView('diet')} className={`flex flex-col items-center gap-0.5 transition-all ${view==='diet'?'text-[#f9991a] scale-105':'opacity-60'}`}><Icon name="utensils" size={24} /><span className="text-[12px] font-bold tracking-tight text-brand">飲食</span></button>
-                            <button onClick={()=>setView('plan')} className={`flex flex-col items-center gap-0.5 transition-all ${view==='plan'?'text-[#f9991a] scale-105':'opacity-60'}`}><Icon name="clipboard" size={24} /><span className="text-[12px] font-bold tracking-tight text-brand text-brand text-brand">計畫</span></button>
-                        </div>
-                    </nav>
+                // Navbar
+                React.createElement('nav', { className: "island-navbar text-[#9caeba] text-brand" },
+                    React.createElement('div', { className: "flex flex-1 justify-around items-center" },
+                        React.createElement('button', { onClick: () => setView('home'), className: `flex flex-col items-center gap-0.5 transition-all ${view === 'home' ? 'text-[#f9991a] scale-105' : 'opacity-60'}` }, React.createElement(Icon, { name: "home", size: 24 }), React.createElement('span', { className: "text-[12px] font-bold tracking-tight" }, "首頁")),
+                        React.createElement('button', { onClick: () => setView('history'), className: `flex flex-col items-center gap-0.5 transition-all ${view === 'history' ? 'text-[#f9991a] scale-105' : 'opacity-60'}` }, React.createElement(Icon, { name: "activity", size: 24 }), React.createElement('span', { className: "text-[12px] font-bold tracking-tight" }, "運動"))
+                    ),
+                    React.createElement('button', { onClick: handleHeaderPlusClick, className: "glow-action-btn shadow-xl active:scale-90 text-white font-bold tracking-widest text-[16px]" }, activePlanId ? React.createElement(Icon, { name: "plus", size: 32 }) : "GO!"),
+                    React.createElement('div', { className: "flex flex-1 justify-around items-center text-brand" },
+                        React.createElement('button', { onClick: () => setView('diet'), className: `flex flex-col items-center gap-0.5 transition-all ${view === 'diet' ? 'text-[#f9991a] scale-105' : 'opacity-60'}` }, React.createElement(Icon, { name: "utensils", size: 24 }), React.createElement('span', { className: "text-[12px] font-bold tracking-tight" }, "飲食")),
+                        React.createElement('button', { onClick: () => setView('plan'), className: `flex flex-col items-center gap-0.5 transition-all ${view === 'plan' ? 'text-[#f9991a] scale-105' : 'opacity-60'}` }, React.createElement(Icon, { name: "clipboard", size: 24 }), React.createElement('span', { className: "text-[12px] font-bold tracking-tight" }, "計畫"))
+                    )
+                ),
 
-                    {/* --- 錄入彈窗 (要求：高度 75% 圓角 16px 按鈕固定底部) --- */}
-                    {showEntryModal && (
-                        <div className="sheet-container text-[#040316]">
-                            <div className="sheet-backdrop" onClick={closeModal} />
-                            <div className="sheet-content">
-                                <header className="h-[64px] px-4 flex justify-between items-center border-b border-gray-50 bg-white sticky top-0 z-20 text-brand">
-                                    <div className="w-10 text-brand"></div>
-                                    <h3 className="text-[18px] font-bold text-[#5a6a7a] text-brand text-brand">{editingId?'編輯紀錄':'新增紀錄'}</h3>
-                                    <div onClick={closeModal} className="touch-target text-[#9caeba] text-brand text-brand text-brand text-brand text-brand text-brand"><Icon name="x" size={24} /></div>
-                                </header>
-                                <div className="flex-1 overflow-y-auto p-4 space-y-4 no-scrollbar text-brand text-brand">
-                                    {!editingId && (
-                                        <div className="flex bg-gray-100 p-1 rounded-xl text-brand text-brand">
-                                            <button onClick={()=>setEntryType('workout')} className={`flex-1 h-[32px] rounded-[10px] text-[13px] font-bold transition-all ${entryType==='workout'?'bg-white shadow-sm text-[#040316]':'text-[#9caeba]'}`}>訓練項目</button>
-                                            <button onClick={()=>setEntryType('diet')} className={`flex-1 h-[32px] rounded-[10px] text-[13px] font-bold transition-all ${entryType==='diet'?'bg-white shadow-sm text-[#040316]':'text-[#9caeba]'}`}>飲食餐點</button>
-                                        </div>
-                                    )}
-                                    {!editingId && (
-                                        <div className="bg-blue-50/80 p-4 rounded-xl text-blue-600 text-[14px] flex items-center gap-3 border border-blue-200 shadow-sm text-brand text-brand">
-                                            <Icon name="info" size={18} className="text-blue-500" />
-                                            <span>妳可以同時填寫分頁內容，按下儲存將一併錄入！</span>
-                                        </div>
-                                    )}
-                                    <div className="space-y-4 text-brand">
-                                        <div><span className="text-[16px] font-bold text-[#5a6a7a] mb-2 block text-brand">紀錄日期</span><input type="date" value={entryType==='workout'?w_date:d_date} onChange={e=>entryType==='workout'?setWDate(e.target.value):setDDate(e.target.value)} className="px-[12px] h-11 bg-blue-50/50 rounded-xl w-full border-none outline-none text-brand text-brand" /></div>
-                                        {entryType === 'workout' ? (
-                                            <div className="space-y-4 text-brand text-brand">
-                                                <div><span className="text-[16px] font-bold text-[#5a6a7a] mb-2 block text-brand text-brand">訓練部位</span><div className="flex gap-2 flex-wrap text-brand">{BODY_PARTS.map(p => (<button key={p} onClick={()=>setWParts(v => v.includes(p) ? v.filter(i=>i!==p) : [...v, p])} className={`tag-btn ${w_parts.includes(p)?'active':''}`}>{p}</button>))}</div></div>
-                                                <div>
-                                                    <span className="text-[16px] font-bold text-[#5a6a7a] mb-2 block text-brand text-brand">動作清單</span>
-                                                    <div className="flex gap-2 overflow-x-auto no-scrollbar mb-3 text-brand text-brand text-brand">{Object.keys(PILATES_DATABASE).map(cat => (<button key={cat} onClick={()=> setWCategory(cat)} className={`tag-btn ${w_category===cat?'active':''}`}>{cat.split(' ')[0]}</button>))}</div>
-                                                    <div className="equipment-block text-brand text-brand text-brand text-brand text-brand"><div className="space-y-2">
-                                                            {PILATES_DATABASE[w_category].map(move => { const cE = w_exercises.find(e => e.name === move); const isS = !!cE; return (<div key={move} className={`exercise-item-card ${isS?'active':''}`}><div className="flex items-center justify-between w-full text-brand text-brand text-brand text-brand text-brand"><div className="flex items-center gap-4 flex-1 cursor-pointer text-brand text-brand text-brand text-brand text-brand" onClick={() => handleAddExercise(move)}><div className={`plus-box ${isS?'active':''}`}><Icon name={isS ? "check" : "plus"} size={18} /></div><span className="text-[14px] font-bold text-brand">{move}</span></div><button onClick={(e) => { e.stopPropagation(); watchYoutube(move); }} className="touch-target text-red-300 active:scale-90 text-brand text-brand text-brand"><Icon name="youtube" size={20} /></button></div>{isS && (<div className="flex gap-4 pt-1 border-t border-orange-50 text-[12px] font-bold text-[#5a6a7a] text-brand text-brand text-brand text-brand text-brand"><div className="flex-1 flex items-center bg-[#f2f4f7] rounded-xl px-2 py-1.5 text-brand text-brand text-brand text-brand text-brand text-brand"><button onClick={()=>updateEx(move, 'sets', -1)} className="stepper-btn text-brand text-brand">-</button><span className="flex-1 text-center text-brand text-brand text-brand">{cE.sets}組</span><button onClick={()=>updateEx(move, 'sets', 1)} className="stepper-btn text-brand text-brand text-brand">+</button></div><div className="flex-1 flex items-center bg-[#f2f4f7] rounded-xl px-2 py-1.5 text-brand text-brand text-brand text-brand text-brand text-brand text-brand"><button onClick={()=>updateEx(move, 'reps', -1)} className="stepper-btn text-brand text-brand text-brand">-</button><span className="flex-1 text-center text-brand text-brand text-brand text-brand">{cE.reps}次</span><button onClick={()=>updateEx(move, 'reps', 1)} className="stepper-btn text-brand text-brand text-brand text-brand text-brand">+</button></div></div>)}</div>); })}
-                                                    </div></div>
-                                                </div>
-                                                <div><span className="text-[16px] font-bold text-[#5a6a7a] mb-2 block text-brand text-brand">訓練筆記</span><textarea value={w_note} onChange={e=>setWNote(e.target.value)} placeholder="妳今天的心情如何？" className="note-textarea bg-blue-50/50 text-brand" /></div>
-                                            </div>
-                                        ) : (
-                                            <div className="space-y-4 text-brand">
-                                                <div className="flex items-center justify-between bg-blue-50/50 p-6 rounded-[24px] text-[#f9991a] shadow-inner text-brand text-brand text-brand"><div className="flex items-center gap-4 text-brand text-brand text-brand text-brand"><Icon name="droplets" size={26} /><div className="flex items-baseline min-w-[110px] text-[#040316] text-brand text-brand text-brand text-brand"><input type="number" value={d_water} onChange={e=>setDWater(e.target.value)} className="w-24 bg-transparent text-[28px] font-bold outline-none" /><span className="text-[14px] font-bold text-[#9caeba] ml-1 text-brand text-brand">cc</span></div></div><div className="flex gap-2 text-brand text-brand text-brand"><button onClick={()=>setDWater(Math.max(0,Number(d_water)-250))} className="w-10 h-10 bg-white rounded-xl shadow-sm font-bold active:scale-90 text-[#040316] text-brand text-brand">-</button><button onClick={()=>setDWater(Number(d_water)+250)} className="w-10 h-10 bg-[#f9991a] text-white rounded-xl shadow-md active:scale-90 text-brand text-brand">+</button></div></div>
-                                                {['breakfast', 'lunch', 'dinner', 'snacks'].map(meal => (
-                                                    <div key={meal} className="space-y-2 text-brand text-brand">
-                                                        <p className="text-[16px] font-bold text-[#5a6a7a] mb-2 text-brand text-brand text-brand">{meal==='breakfast'?'早餐':meal==='lunch'?'午餐':meal==='dinner'?'晚餐':'點心'}</p>
-                                                        <textarea value={dietForm[meal]} onChange={e=>setDietForm(p => ({ ...p, [meal]: e.target.value }))} rows="2" placeholder="紀錄妳的餐點..." className="text-[14px] p-3 bg-blue-50/50 rounded-xl w-full border-none outline-none text-[#040316] text-brand text-brand" />
-                                                        <div className="flex gap-2 overflow-x-auto no-scrollbar pt-1 items-center text-brand text-brand">
-                                                            {quickFoods[meal]?.map(f => (
-                                                                <div key={f} className="relative group text-brand text-brand text-brand text-brand">
-                                                                    <button onClick={() => handleQuickFoodSelect(meal, f)} className="tag-btn text-[12px] bg-white border-gray-100 pr-8 text-brand text-brand">{f}</button>
-                                                                    <button onClick={(e)=>{e.stopPropagation(); confirmDelete('quickFood', f, meal);}} className="absolute right-1 top-1/2 -translate-y-1/2 touch-target text-red-300 text-brand text-brand text-brand"><Icon name="x-circle" size={14} /></button>
-                                                                </div>
-                                                            ))}
-                                                            <div className="flex items-center gap-1 bg-blue-100/30 pl-3 pr-1 rounded-xl h-9 border border-blue-100 text-brand text-brand text-brand text-brand text-brand">
-                                                                <input value={customFoodInput[meal]} onChange={e=>setCustomFoodInput(p=>({...p, [meal]: e.target.value}))} placeholder="快捷..." className="bg-transparent w-12 text-[12px] outline-none" />
-                                                                <button onClick={()=>handleAddCustomQuickFood(meal)} className="touch-target !w-7 !h-7 bg-[#f9991a] text-white rounded-lg text-brand text-brand text-brand text-brand"><Icon name="plus" size={14} /></button>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        )}
-                                    </div>
-                                </div>
-                                {/* 要求：按鈕固定在底部，留白 16px */}
-                                <div className="p-4 bg-white border-t border-gray-50 pb-4 text-brand text-brand text-brand text-brand"><button onClick={handleSaveEntry} disabled={isSaving} className="primary-btn w-full shadow-lg text-white flex items-center justify-center gap-2 text-brand text-brand">{isSaving ? <><Icon name="loader-2" size={18} className="spinner" /> 儲存中...</> : '儲存紀錄'}</button></div>
-                            </div>
-                        </div>
-                    )}
+                // Modals
+                showEntryModal && React.createElement('div', { className: "sheet-container text-[#040316]" },
+                    React.createElement('div', { className: "sheet-backdrop", onClick: closeModal }),
+                    React.createElement('div', { className: "sheet-content" },
+                        React.createElement('header', { className: "h-[64px] px-4 flex justify-between items-center border-b border-gray-50 bg-white sticky top-0 z-20 text-brand" },
+                            React.createElement('div', { className: "w-10 text-brand" }),
+                            React.createElement('h3', { className: "text-[18px] font-bold text-[#5a6a7a] text-brand" }, editingId ? '編輯紀錄' : '新增紀錄'),
+                            React.createElement('div', { onClick: closeModal, className: "touch-target text-[#9caeba]" }, React.createElement(Icon, { name: "x", size: 24 }))
+                        ),
+                        React.createElement('div', { className: "flex-1 overflow-y-auto p-4 space-y-4 no-scrollbar text-brand" },
+                            !editingId && React.createElement('div', { className: "flex bg-gray-100 p-1 rounded-xl" },
+                                React.createElement('button', { onClick: () => setEntryType('workout'), className: `flex-1 h-[32px] rounded-[10px] text-[13px] font-bold transition-all ${entryType === 'workout' ? 'bg-white shadow-sm text-[#040316]' : 'text-[#9caeba]'}` }, "訓練項目"),
+                                React.createElement('button', { onClick: () => setEntryType('diet'), className: `flex-1 h-[32px] rounded-[10px] text-[13px] font-bold transition-all ${entryType === 'diet' ? 'bg-white shadow-sm text-[#040316]' : 'text-[#9caeba]'}` }, "飲食餐點")
+                            ),
+                            React.createElement('div', { className: "space-y-4" },
+                                React.createElement('div', null, React.createElement('span', { className: "text-[16px] font-bold text-[#5a6a7a] mb-2 block" }, "紀錄日期"), React.createElement('input', { type: "date", value: entryType === 'workout' ? w_date : d_date, onChange: e => entryType === 'workout' ? setWDate(e.target.value) : setDDate(e.target.value), className: "px-[12px] h-11 bg-blue-50/50 rounded-xl w-full border-none outline-none" })),
+                                entryType === 'workout' ? React.createElement('div', { className: "space-y-4" },
+                                    React.createElement('div', null, React.createElement('span', { className: "text-[16px] font-bold text-[#5a6a7a] mb-2 block" }, "動作清單"), React.createElement('div', { className: "flex gap-2 overflow-x-auto no-scrollbar mb-3" }, Object.keys(PILATES_DATABASE).map(cat => React.createElement('button', { key: cat, onClick: () => setWCategory(cat), className: `tag-btn ${w_category === cat ? 'active' : ''}` }, cat.split(' ')[0]))), React.createElement('div', { className: "equipment-block" }, PILATES_DATABASE[w_category].map(move => {
+                                        const cE = w_exercises.find(e => e.name === move); const isS = !!cE;
+                                        return React.createElement('div', { key: move, className: `exercise-item-card ${isS ? 'active' : ''}` },
+                                            React.createElement('div', { className: "flex items-center justify-between w-full" },
+                                                React.createElement('div', { className: "flex items-center gap-4 flex-1 cursor-pointer", onClick: () => handleAddExercise(move) }, React.createElement('div', { className: `plus-box ${isS ? 'active' : ''}` }, React.createElement(Icon, { name: isS ? "check" : "plus", size: 18 })), React.createElement('span', { className: "text-[14px] font-bold" }, move)),
+                                                React.createElement('button', { onClick: (e) => { e.stopPropagation(); watchYoutube(move); }, className: "touch-target text-red-300" }, React.createElement(Icon, { name: "youtube", size: 20 }))
+                                            ),
+                                            isS && React.createElement('div', { className: "flex gap-4 pt-1 border-t border-orange-50 text-[12px] font-bold text-[#5a6a7a]" },
+                                                React.createElement('div', { className: "flex-1 flex items-center bg-[#f2f4f7] rounded-xl px-2 py-1.5" }, React.createElement('button', { onClick: () => updateEx(move, 'sets', -1), className: "stepper-btn" }, "-"), React.createElement('span', { className: "flex-1 text-center" }, `${cE.sets}組`), React.createElement('button', { onClick: () => updateEx(move, 'sets', 1), className: "stepper-btn" }, "+")),
+                                                React.createElement('div', { className: "flex-1 flex items-center bg-[#f2f4f7] rounded-xl px-2 py-1.5" }, React.createElement('button', { onClick: () => updateEx(move, 'reps', -1), className: "stepper-btn" }, "-"), React.createElement('span', { className: "flex-1 text-center" }, `${cE.reps}次`), React.createElement('button', { onClick: () => updateEx(move, 'reps', 1), className: "stepper-btn" }, "+"))
+                                            )
+                                        );
+                                    }))),
+                                    React.createElement('div', null, React.createElement('span', { className: "text-[16px] font-bold text-[#5a6a7a] mb-2 block" }, "訓練隨筆"), React.createElement('textarea', { value: w_note, onChange: e => setWNote(e.target.value), placeholder: "妳今天的心情如何？", className: "note-textarea bg-blue-50/50 text-brand" }))
+                                ) : React.createElement('div', { className: "space-y-4 text-brand" },
+                                    React.createElement('div', { className: "flex items-center justify-between bg-blue-50/50 p-6 rounded-[24px] text-[#f9991a] shadow-inner" },
+                                        React.createElement('div', { className: "flex items-center gap-4" }, React.createElement(Icon, { name: "droplets", size: 26 }), React.createElement('div', { className: "flex items-baseline min-w-[110px] text-[#040316]" }, React.createElement('input', { type: "number", value: d_water, onChange: e => setDWater(e.target.value), className: "w-24 bg-transparent text-[28px] font-bold outline-none" }), React.createElement('span', { className: "text-[14px] font-bold text-[#9caeba] ml-1" }, "cc"))),
+                                        React.createElement('div', { className: "flex gap-2" }, React.createElement('button', { onClick: () => setDWater(Math.max(0, Number(d_water) - 250)), className: "w-10 h-10 bg-white rounded-xl shadow-sm font-bold text-[#040316]" }, "-"), React.createElement('button', { onClick: () => setDWater(Number(d_water) + 250), className: "w-10 h-10 bg-[#f9991a] text-white rounded-xl shadow-md" }, "+"))
+                                    ),
+                                    ['breakfast', 'lunch', 'dinner', 'snacks'].map(meal => React.createElement('div', { key: meal, className: "space-y-2" },
+                                        React.createElement('p', { className: "text-[16px] font-bold text-[#5a6a7a] mb-2" }, meal === 'breakfast' ? '早餐' : meal === 'lunch' ? '午餐' : meal === 'dinner' ? '晚餐' : '點心'),
+                                        React.createElement('textarea', { value: dietForm[meal], onChange: e => setDietForm(p => ({ ...p, [meal]: e.target.value })), rows: "2", placeholder: "紀錄妳的餐點...", className: "text-[14px] p-3 bg-blue-50/50 rounded-xl w-full border-none outline-none text-[#040316] text-brand" }),
+                                        React.createElement('div', { className: "flex gap-2 overflow-x-auto no-scrollbar pt-1 items-center" },
+                                            quickFoods[meal]?.map(f => React.createElement('div', { key: f, className: "relative group" },
+                                                React.createElement('button', { onClick: () => handleQuickFoodSelect(meal, f), className: "tag-btn text-[12px] bg-white border-gray-100 pr-8" }, f),
+                                                React.createElement('button', { onClick: (e) => { e.stopPropagation(); confirmDelete('quickFood', f, meal); }, className: "absolute right-1 top-1/2 -translate-y-1/2 touch-target text-red-300" }, React.createElement(Icon, { name: "x-circle", size: 14 }))
+                                            )),
+                                            React.createElement('div', { className: "flex items-center gap-1 bg-blue-100/30 pl-3 pr-1 rounded-xl h-9 border border-blue-100" },
+                                                React.createElement('input', { value: customFoodInput[meal], onChange: e => setCustomFoodInput(p => ({ ...p, [meal]: e.target.value })), placeholder: "快捷...", className: "bg-transparent w-12 text-[12px] outline-none" }),
+                                                React.createElement('button', { onClick: () => { if (!customFoodInput[meal]) return; setQuickFoods(p => ({ ...p, [meal]: [...p[meal], customFoodInput[meal]] })); setCustomFoodInput(p => ({ ...p, [meal]: '' })); }, className: "touch-target !w-7 !h-7 bg-[#f9991a] text-white rounded-lg" }, React.createElement(Icon, { name: "plus", size: 14 }))
+                                            )
+                                        )
+                                    ))
+                                )
+                            )
+                        ),
+                        // 要求：按鈕固定在底部，留白 16px
+                        React.createElement('div', { className: "p-4 bg-white border-t border-gray-50 pb-4 text-brand" }, React.createElement('button', { onClick: handleSaveEntry, disabled: isSaving, className: "primary-btn w-full shadow-lg text-white flex items-center justify-center gap-2" }, isSaving ? "同步中..." : "儲存紀錄"))
+                    )
+                ),
 
-                    {/* --- 新增計畫彈窗 --- */}
-                    {showPlanModal && (
-                        <div className="sheet-container text-[#040316]">
-                            <div className="sheet-backdrop" onClick={closeModal} />
-                            <div className="sheet-content">
-                                <header className="h-[64px] px-4 flex justify-between items-center border-b border-gray-50 bg-white sticky top-0 z-20 text-brand text-brand">
-                                    <div className="w-10 text-brand text-brand"></div>
-                                    <h3 className="text-[18px] font-bold text-[#5a6a7a]">{editingPlanId ? '編輯目標' : '啟動新目標'}</h3>
-                                    <div onClick={closeModal} className="touch-target text-[#9caeba] text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand"><Icon name="x" size={24} /></div>
-                                </header>
-                                <div className="flex-1 overflow-y-auto p-4 space-y-4 no-scrollbar text-brand text-brand text-brand text-brand text-brand text-brand">
-                                    <div><span className="font-bold mb-2 block text-[#5a6a7a] text-[16px] text-brand text-brand text-brand text-brand text-brand">計畫名稱</span><input value={newPlanTitle} onChange={e=>setNewPlanTitle(e.target.value)} placeholder="首爾衝刺 14 天" className="text-[14px] w-full bg-blue-50/50 rounded-xl h-11 px-3 outline-none text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand" /></div>
-                                    <div><span className="font-bold mb-2 block text-[#5a6a7a] text-[16px] text-brand text-brand text-brand text-brand text-brand text-brand">目標日期</span><input type="date" value={newPlanDate} onChange={e=>setNewPlanDate(e.target.value)} className="text-[14px] w-full bg-blue-50/50 rounded-xl h-11 px-3 outline-none text-brand text-brand text-brand text-brand text-brand text-brand text-brand" />{!editingPlanId && <div className="flex gap-2 pt-2 text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand">{[7, 14, 30].map(d => (<button key={d} onClick={() => { const obj = new Date(); obj.setDate(obj.getDate() + d); setNewPlanDate(obj.toISOString().split('T')[0]); }} className="tag-btn text-[12px] text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand">+{d}天</button>))}</div>}</div>
-                                    <div><span className="font-bold mb-2 block text-[#5a6a7a] text-[16px] text-brand text-brand text-brand text-brand text-brand text-brand">體態設定</span><div className="flex items-center gap-2 text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand"><div className="weight-input-card flex-1 p-4 bg-blue-50/50 rounded-[20px] flex flex-col items-center gap-1 text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand"><span className="text-[11px] font-bold text-[#9caeba] uppercase text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand">起始</span><div className="flex items-baseline text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand"><input type="number" step="0.1" value={newPlanBaselineWeight} onChange={e=>setNewPlanBaselineWeight(e.target.value)} placeholder="54.0" className="w-16 bg-transparent text-center text-[20px] font-bold outline-none text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand" /><span className="text-[12px] font-bold text-[#9caeba] ml-0.5 text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand">kg</span></div></div><div className="text-[#f9991a] opacity-30 text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand"><Icon name="chevron-right" size={24} /></div><div className="weight-input-card flex-1 bg-orange-50/30 p-4 rounded-[20px] flex flex-col items-center gap-1 border border-orange-100 text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand"><span className="text-[11px] font-bold text-[#f9991a] uppercase text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand">目標</span><div className="flex items-baseline text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand"><input type="number" step="0.1" value={newPlanTargetWeight} onChange={e=>setNewPlanTargetWeight(e.target.value)} placeholder="50.0" className="!text-[#f9991a] w-16 bg-transparent text-center text-[20px] font-bold outline-none text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand" /><span className="text-[12px] font-bold text-[#f9991a] ml-0.5 text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand">kg</span></div></div></div></div>
-                                </div>
-                                <div className="p-4 bg-white border-t border-gray-50 pb-4 text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand"><button onClick={handleCreatePlan} disabled={!newPlanDate || !newPlanTitle} className="primary-btn w-full shadow-lg font-bold tracking-widest uppercase text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand">啟動計畫</button></div>
-                            </div>
-                        </div>
-                    )}
+                showPlanModal && React.createElement('div', { className: "sheet-container text-[#040316]" },
+                    React.createElement('div', { className: "sheet-backdrop", onClick: closeModal }),
+                    React.createElement('div', { className: "sheet-content" },
+                        React.createElement('header', { className: "h-[64px] px-4 flex justify-between items-center border-b border-gray-50 bg-white sticky top-0 z-20 text-brand" },
+                            React.createElement('div', { className: "w-10 text-brand" }),
+                            React.createElement('h3', { className: "text-[18px] font-bold text-[#5a6a7a]" }, editingPlanId ? '編輯目標' : '啟動新目標'),
+                            React.createElement('div', { onClick: closeModal, className: "touch-target text-[#9caeba]" }, React.createElement(Icon, { name: "x", size: 24 }))
+                        ),
+                        React.createElement('div', { className: "flex-1 overflow-y-auto p-4 space-y-4 no-scrollbar text-brand" },
+                            React.createElement('div', null, React.createElement('span', { className: "font-bold mb-2 block text-[#5a6a7a] text-[16px]" }, "計畫名稱"), React.createElement('input', { value: newPlanTitle, onChange: e => setNewPlanTitle(e.target.value), placeholder: "首爾衝刺 14 天", className: "text-[14px] w-full bg-blue-50/50 rounded-xl h-11 px-3 outline-none" })),
+                            React.createElement('div', null, React.createElement('span', { className: "font-bold mb-2 block text-[#5a6a7a] text-[16px]" }, "目標日期"), React.createElement('input', { type: "date", value: newPlanDate, onChange: e => setNewPlanDate(e.target.value), className: "text-[14px] w-full bg-blue-50/50 rounded-xl h-11 px-3 outline-none" }), !editingPlanId && React.createElement('div', { className: "flex gap-2 pt-2" }, [7, 14, 30].map(d => React.createElement('button', { key: d, onClick: () => { const obj = new Date(); obj.setDate(obj.getDate() + d); setNewPlanDate(obj.toISOString().split('T')[0]); }, className: "tag-btn text-[12px]" }, `+${d}天`)))),
+                            React.createElement('div', null, React.createElement('span', { className: "font-bold mb-2 block text-[#5a6a7a] text-[16px]" }, "體態設定"), React.createElement('div', { className: "flex items-center gap-2" },
+                                React.createElement('div', { className: "weight-input-card flex-1 p-4 bg-blue-50/50 rounded-[20px] flex flex-col items-center gap-1" }, React.createElement('span', { className: "text-[11px] font-bold text-[#9caeba] uppercase" }, "起始"), React.createElement('div', { className: "flex items-baseline" }, React.createElement('input', { type: "number", step: "0.1", value: newPlanBaselineWeight, onChange: e => setNewPlanBaselineWeight(e.target.value), placeholder: "54.0", className: "w-16 bg-transparent text-center text-[20px] font-bold outline-none" }), React.createElement('span', { className: "text-[12px] font-bold text-[#9caeba] ml-0.5" }, "kg"))),
+                                React.createElement(Icon, { name: "chevron-right", size: 24, className: "text-[#f9991a] opacity-30" }),
+                                React.createElement('div', { className: "weight-input-card flex-1 bg-orange-50/30 p-4 rounded-[20px] flex flex-col items-center gap-1 border border-orange-100" }, React.createElement('span', { className: "text-[11px] font-bold text-[#f9991a] uppercase text-brand" }, "目標"), React.createElement('div', { className: "flex items-baseline" }, React.createElement('input', { type: "number", step: "0.1", value: newPlanTargetWeight, onChange: e => setNewPlanTargetWeight(e.target.value), placeholder: "50.0", className: "!text-[#f9991a] w-16 bg-transparent text-center text-[20px] font-bold outline-none" }), React.createElement('span', { className: "text-[12px] font-bold text-[#f9991a] ml-0.5" }, "kg")))
+                            ))
+                        ),
+                        React.createElement('div', { className: "p-4 bg-white border-t border-gray-50 pb-4 text-brand" }, React.createElement('button', { onClick: handleCreatePlan, disabled: isSaving || !newPlanDate || !newPlanTitle, className: "primary-btn w-full shadow-lg font-bold tracking-widest uppercase" }, isSaving ? "同步中..." : "啟動計畫"))
+                    )
+                ),
 
-                    {/* --- 置中顯示的刪除確認彈窗 --- */}
-                    {showConfirmModal && (
-                        <div className="fixed inset-0 z-[2000] flex items-center justify-center p-6 text-brand">
-                            <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={()=>setShowConfirmModal(false)} />
-                            <div className="modal-center-content relative z-10 w-full max-w-[320px] bg-white rounded-[32px] p-6 shadow-2xl text-center text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand">
-                                <div className="w-16 h-16 bg-red-50 rounded-full flex items-center justify-center text-red-500 mx-auto mb-4 text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand">
-                                    <Icon name="alert-triangle" size={32} />
-                                </div>
-                                <h3 className="text-[18px] font-bold mb-2 text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand">確認要刪除嗎？</h3>
-                                <p className="text-[14px] text-[#7a8b9a] leading-relaxed mb-6 text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand">
-                                    刪除後資料將無法復原，<br/>請確認是否繼續執行？
-                                </p>
-                                <div className="flex gap-3 text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand">
-                                    <button onClick={()=>setShowConfirmModal(false)} className="flex-1 h-12 bg-gray-100 rounded-2xl font-bold text-[#5a6a7a] active:scale-95 transition-all text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand">不，取消</button>
-                                    <button onClick={executeDelete} className="flex-1 h-12 bg-red-500 text-white rounded-2xl font-bold active:scale-95 transition-all shadow-lg shadow-red-200 text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand text-brand">是的，刪除</button>
-                                </div>
-                            </div>
-                        </div>
-                    )}
-                </div>
+                showConfirmModal && React.createElement('div', { className: "fixed inset-0 z-[2000] flex items-center justify-center p-6 text-brand" },
+                    React.createElement('div', { className: "absolute inset-0 bg-black/40 backdrop-blur-sm", onClick: () => setShowConfirmModal(false) }),
+                    React.createElement('div', { className: "modal-center-content relative z-10 w-full max-w-[320px] bg-white rounded-[32px] p-6 shadow-2xl text-center text-brand" },
+                        React.createElement('div', { className: "w-16 h-16 bg-red-50 rounded-full flex items-center justify-center text-red-500 mx-auto mb-4" }, React.createElement(Icon, { name: "alert-triangle", size: 32 })),
+                        React.createElement('h3', { className: "text-[18px] font-bold mb-2" }, "確認要刪除嗎？"),
+                        React.createElement('p', { className: "text-[14px] text-[#7a8b9a] leading-relaxed mb-6" }, "刪除後資料將無法復原，", React.createElement('br'), "請確認是否繼續執行？"),
+                        React.createElement('div', { className: "flex gap-3 text-brand" },
+                            React.createElement('button', { onClick: () => setShowConfirmModal(false), className: "flex-1 h-12 bg-gray-100 rounded-2xl font-bold text-[#5a6a7a] active:scale-95 transition-all text-brand" }, "不，取消"),
+                            React.createElement('button', { onClick: executeDelete, className: "flex-1 h-12 bg-red-500 text-white rounded-2xl font-bold active:scale-95 transition-all shadow-lg shadow-red-200 text-brand" }, "是的，刪除")
+                        )
+                    )
+                )
             );
         };
 
-        ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+        ReactDOM.createRoot(document.getElementById('root')).render(React.createElement(App));
     </script>
 </body>
 </html>
