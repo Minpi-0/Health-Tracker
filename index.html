@@ -21,7 +21,7 @@
             --accent-color: #f9991a; 
             --gray-blue: #5a6a7a;
             --muted-gray: #9caeba;
-            --radius-sheet: 16px;
+            --radius-sheet: 16px; /* 要求：圓角為 16px */
             --ice-blue: rgba(233, 241, 251, 0.5);
         }
 
@@ -90,7 +90,7 @@
         .glow-action-btn {
             width: 72px; height: 72px; background: linear-gradient(135deg, #fbbf24, #f9991a);
             border-radius: 50%; display: flex; align-items: center; justify-content: center;
-            color: white; box-shadow: 0 8px 25px rgba(249, 153, 26, 0.4);
+            color: white; box-shadow: 0 8px 30px rgba(249, 153, 26, 0.4);
             transform: translateY(-24px); border: 4px solid white;
         }
 
@@ -100,7 +100,7 @@
         .sheet-content {
             position: relative; z-index: 1010; width: 100%; max-width: 430px; background: white;
             border-top-left-radius: var(--radius-sheet); border-top-right-radius: var(--radius-sheet); 
-            height: 75vh; 
+            height: 75vh; /* 要求：高度 75% */
             display: flex; flex-direction: column; pointer-events: auto; animation: slide-up 0.35s cubic-bezier(0.16, 1, 0.3, 1);
             overflow: hidden;
         }
@@ -131,7 +131,7 @@
     <div id="root"></div>
 
     <script type="module">
-        // 修復：確保在模組環境中能正確識別 React
+        // 修復：模組環境下的 React 識別
         const React = window.React;
         const ReactDOM = window.ReactDOM;
         const { useState, useMemo, useEffect, useRef } = React;
@@ -150,14 +150,33 @@
             appId: "1:77615585267:web:451f6672cc9834dc92a486"
         };
 
-        // Firebase 初始化 (優先使用 myFirebaseConfig，若無則嘗試環境變數)
+        // Firebase 初始化
         const firebaseConfig = myFirebaseConfig.apiKey ? myFirebaseConfig : (typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : { apiKey: "" });
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'k-glow-tracker';
 
-        // --- 核心組件 ---
+        // --- 重要：清理資料以防 Firebase 報錯 ---
+        const safeData = (obj) => {
+            const clean = (o) => {
+                const newObj = Array.isArray(o) ? [] : {};
+                for (let key in o) {
+                    let val = o[key];
+                    if (val === undefined || (typeof val === 'number' && isNaN(val))) {
+                        newObj[key] = null;
+                    } else if (typeof val === 'object' && val !== null) {
+                        newObj[key] = clean(val);
+                    } else {
+                        newObj[key] = val;
+                    }
+                }
+                return newObj;
+            };
+            return clean(obj);
+        };
+
+        // --- Icon 元件 ---
         const Icon = ({ name, size = 24, className = "" }) => {
             const wrapperRef = useRef(null);
             useEffect(() => {
@@ -186,22 +205,22 @@
             const [view, setView] = useState('home');
             const [plans, setPlans] = useState([]);
             const [activePlanId, setActivePlanId] = useState(null);
-            
             const [showEntryModal, setShowEntryModal] = useState(false);
             const [showPlanModal, setShowPlanModal] = useState(false);
             const [showConfirmModal, setShowConfirmModal] = useState(false);
             const [confirmAction, setConfirmAction] = useState(null);
-            
             const [entryType, setEntryType] = useState('workout');
             const [historyFilterDate, setHistoryFilterDate] = useState(new Date().toISOString().split('T')[0]);
             const [weekOffset, setWeekOffset] = useState(0);
 
+            // 自訂快捷食物
             const [quickFoods, setQuickFoods] = useState({ 
                 breakfast: ["荷包蛋", "地瓜", "無糖豆漿"], lunch: ["雞胸肉", "健康餐盒", "沙拉"], 
                 dinner: ["燙青菜", "煎豆腐", "糙米飯"], snacks: ["堅果", "優格", "蛋白飲"]
             });
             const [customFoodInput, setCustomFoodInput] = useState({ breakfast: '', lunch: '', dinner: '', snacks: '' });
 
+            // 紀錄表單
             const [editingId, setEditingId] = useState(null);
             const [w_date, setWDate] = useState(new Date().toISOString().split('T')[0]);
             const [d_date, setDDate] = useState(new Date().toISOString().split('T')[0]);
@@ -216,13 +235,14 @@
             const [d_water, setDWater] = useState(200);
             const [isSaving, setIsSaving] = useState(false);
 
+            // 計畫表單
             const [editingPlanId, setEditingPlanId] = useState(null);
             const [newPlanTitle, setNewPlanTitle] = useState('');
             const [newPlanDate, setNewPlanDate] = useState('');
             const [newPlanBaselineWeight, setNewPlanBaselineWeight] = useState('');
             const [newPlanTargetWeight, setNewPlanTargetWeight] = useState('');
 
-            // --- 重要：功能處理函式 ---
+            // --- 功能與輔助函式 ---
             const closeModal = () => { 
                 setShowEntryModal(false); setShowPlanModal(false); setEditingPlanId(null); setEditingId(null);
                 setWNote(''); setWExercises([]); setWParts([]); setDietForm({ breakfast: '', lunch: '', dinner: '', snacks: '' });
@@ -237,7 +257,6 @@
             const handleHeaderPlusClick = () => {
                 if (view === 'plan' || !activePlanId) {
                     setEditingPlanId(null); setNewPlanTitle(''); setNewPlanDate('');
-                    setNewPlanBaselineWeight(''); setNewPlanTargetWeight('');
                     setShowPlanModal(true);
                 } else {
                     setEditingId(null); setEntryType(view === 'diet' ? 'diet' : 'workout');
@@ -325,7 +344,7 @@
 
             const todayReinforcement = useMemo(() => DAILY_REINFORCEMENTS[new Date(historyFilterDate).getDate() % DAILY_REINFORCEMENTS.length || 0], [historyFilterDate]);
 
-            // --- 異步功能 ---
+            // --- 異步交互 ---
             const executeDelete = async () => {
                 if (!user || !confirmAction) return;
                 const { type, id, extra } = confirmAction;
@@ -341,7 +360,7 @@
                     let updated = { ...activePlan };
                     if (type === 'workout') updated.workoutEntries = updated.workoutEntries.filter(e => e.id !== id);
                     if (type === 'diet') updated.dietEntries = updated.dietEntries.filter(e => e.id !== id);
-                    await updateDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'plans', activePlan.id), updated);
+                    await updateDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'plans', activePlan.id), safeData(updated));
                 }
                 setShowConfirmModal(false);
             };
@@ -380,7 +399,7 @@
                         updatedPlan.dietEntries = [{ id: Date.now(), date: d_date, time, ...dietForm, water: Number(d_water), kcal: data.kcal, p: data.p, f: data.f, c: data.c }, ...(updatedPlan.dietEntries || [])];
                     }
                 }
-                await updateDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'plans', activePlan.id), updatedPlan);
+                await updateDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'plans', activePlan.id), safeData(updatedPlan));
                 setIsSaving(false);
                 closeModal();
             };
@@ -388,11 +407,16 @@
             const handleCreatePlan = async () => {
                 if (!user || !newPlanTitle || !newPlanDate) return;
                 setIsSaving(true);
-                const planData = { title: newPlanTitle, targetDate: newPlanDate, baselineWeight: parseFloat(newPlanBaselineWeight), targetWeight: parseFloat(newPlanTargetWeight), workoutEntries: [], dietEntries: [] };
+                const planData = { 
+                    title: newPlanTitle, targetDate: newPlanDate, 
+                    baselineWeight: parseFloat(newPlanBaselineWeight) || 0, 
+                    targetWeight: parseFloat(newPlanTargetWeight) || 0, 
+                    workoutEntries: [], dietEntries: [] 
+                };
                 if (editingPlanId) {
-                    await updateDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'plans', editingPlanId), planData);
+                    await updateDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'plans', editingPlanId), safeData(planData));
                 } else {
-                    const docRef = await addDoc(collection(db, 'artifacts', appId, 'users', user.uid, 'plans'), planData);
+                    const docRef = await addDoc(collection(db, 'artifacts', appId, 'users', user.uid, 'plans'), safeData(planData));
                     await setDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'settings', 'profile'), { activePlanId: docRef.id }, { merge: true });
                 }
                 setIsSaving(false);
@@ -405,7 +429,7 @@
                 const w = parseFloat(val); if (isNaN(w) || w <= 0) return;
                 setConfirmAnim(true);
                 const updated = { ...activePlan, workoutEntries: [{ id: Date.now(), date: new Date().toISOString().split('T')[0], weight: w, time: '早上', note: '今日稱重' }, ...(activePlan.workoutEntries || [])] };
-                await updateDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'plans', activePlan.id), updated);
+                await updateDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'plans', activePlan.id), safeData(updated));
                 setTimeout(() => { setConfirmAnim(false); setIsEditingWeight(false); }, 800);
             };
 
@@ -435,7 +459,7 @@
                     React.createElement('div', { className: "flex justify-between items-center mb-3 text-brand" },
                         React.createElement('span', { className: "text-[12px] font-bold text-[#9caeba] flex items-center gap-1.5" }, React.createElement(Icon, { name: "clock", size: 12 }), entry.time),
                         React.createElement('div', { className: "flex items-center -mr-2" },
-                            React.createElement('button', { onClick: () => handleEditRecord(entry, 'diet'), className: "touch-target text-[#9caeba] active:text-[#f9991a]" }, React.createElement(Icon, { name: "edit-3", size: 24 })),
+                            React.createElement('button', { onClick: () => handleEditRecord(entry, 'diet'), className: "touch-target text-[#9caeba] active:text-[#f9991a] transition-all" }, React.createElement(Icon, { name: "edit-3", size: 24 })),
                             React.createElement('button', { onClick: () => confirmDelete('diet', entry.id), className: "touch-target text-[#9caeba] active:text-red-400" }, React.createElement(Icon, { name: "trash-2", size: 24 }))
                         )
                     ),
@@ -605,7 +629,7 @@
                         React.createElement('button', { onClick: () => setView('home'), className: `flex flex-col items-center gap-0.5 transition-all ${view === 'home' ? 'text-[#f9991a] scale-105' : 'opacity-60'}` }, React.createElement(Icon, { name: "home", size: 24 }), React.createElement('span', { className: "text-[12px] font-bold tracking-tight" }, "首頁")),
                         React.createElement('button', { onClick: () => setView('history'), className: `flex flex-col items-center gap-0.5 transition-all ${view === 'history' ? 'text-[#f9991a] scale-105' : 'opacity-60'}` }, React.createElement(Icon, { name: "activity", size: 24 }), React.createElement('span', { className: "text-[12px] font-bold tracking-tight" }, "運動"))
                     ),
-                    React.createElement('button', { onClick: handleHeaderPlusClick, className: "glow-action-btn shadow-xl active:scale-90 text-white font-bold tracking-widest text-[16px]" }, activePlanId ? React.createElement(Icon, { name: "plus", size: 32 }) : "GO!"),
+                    React.createElement('button', { onClick: handleHeaderPlusClick, className: "glow-action-btn shadow-xl active:scale-90 text-white font-bold tracking-widest text-[16px] text-brand" }, activePlanId ? React.createElement(Icon, { name: "plus", size: 32 }) : "GO!"),
                     React.createElement('div', { className: "flex flex-1 justify-around items-center text-brand" },
                         React.createElement('button', { onClick: () => setView('diet'), className: `flex flex-col items-center gap-0.5 transition-all ${view === 'diet' ? 'text-[#f9991a] scale-105' : 'opacity-60'}` }, React.createElement(Icon, { name: "utensils", size: 24 }), React.createElement('span', { className: "text-[12px] font-bold tracking-tight" }, "飲食")),
                         React.createElement('button', { onClick: () => setView('plan'), className: `flex flex-col items-center gap-0.5 transition-all ${view === 'plan' ? 'text-[#f9991a] scale-105' : 'opacity-60'}` }, React.createElement(Icon, { name: "clipboard", size: 24 }), React.createElement('span', { className: "text-[12px] font-bold tracking-tight" }, "計畫"))
@@ -628,7 +652,7 @@
                             ),
                             React.createElement('div', { className: "space-y-4" },
                                 React.createElement('div', null, React.createElement('span', { className: "text-[16px] font-bold text-[#5a6a7a] mb-2 block" }, "紀錄日期"), React.createElement('input', { type: "date", value: entryType === 'workout' ? w_date : d_date, onChange: e => entryType === 'workout' ? setWDate(e.target.value) : setDDate(e.target.value), className: "px-[12px] h-11 bg-blue-50/50 rounded-xl w-full border-none outline-none" })),
-                                entryType === 'workout' ? React.createElement('div', { className: "space-y-4" },
+                                entryType === 'workout' ? React.createElement('div', { className: "space-y-4 text-brand" },
                                     React.createElement('div', null, React.createElement('span', { className: "text-[16px] font-bold text-[#5a6a7a] mb-2 block" }, "動作清單"), React.createElement('div', { className: "flex gap-2 overflow-x-auto no-scrollbar mb-3" }, Object.keys(PILATES_DATABASE).map(cat => React.createElement('button', { key: cat, onClick: () => setWCategory(cat), className: `tag-btn ${w_category === cat ? 'active' : ''}` }, cat.split(' ')[0]))), React.createElement('div', { className: "equipment-block" }, PILATES_DATABASE[w_category].map(move => {
                                         const cE = w_exercises.find(e => e.name === move); const isS = !!cE;
                                         return React.createElement('div', { key: move, className: `exercise-item-card ${isS ? 'active' : ''}` },
@@ -642,13 +666,13 @@
                                             )
                                         );
                                     }))),
-                                    React.createElement('div', null, React.createElement('span', { className: "text-[16px] font-bold text-[#5a6a7a] mb-2 block" }, "訓練隨筆"), React.createElement('textarea', { value: w_note, onChange: e => setWNote(e.target.value), placeholder: "妳今天的心情如何？", className: "note-textarea bg-blue-50/50 text-brand" }))
+                                    React.createElement('div', null, React.createElement('span', { className: "text-[16px] font-bold text-[#5a6a7a] mb-2 block" }, "訓練筆記"), React.createElement('textarea', { value: w_note, onChange: e => setWNote(e.target.value), placeholder: "妳今天的心情如何？", className: "note-textarea bg-blue-50/50 text-brand" }))
                                 ) : React.createElement('div', { className: "space-y-4 text-brand" },
-                                    React.createElement('div', { className: "flex items-center justify-between bg-blue-50/50 p-6 rounded-[24px] text-[#f9991a] shadow-inner" },
+                                    React.createElement('div', { className: "flex items-center justify-between bg-blue-50/50 p-6 rounded-[24px] text-[#f9991a] shadow-inner text-brand" },
                                         React.createElement('div', { className: "flex items-center gap-4" }, React.createElement(Icon, { name: "droplets", size: 26 }), React.createElement('div', { className: "flex items-baseline min-w-[110px] text-[#040316]" }, React.createElement('input', { type: "number", value: d_water, onChange: e => setDWater(e.target.value), className: "w-24 bg-transparent text-[28px] font-bold outline-none" }), React.createElement('span', { className: "text-[14px] font-bold text-[#9caeba] ml-1" }, "cc"))),
-                                        React.createElement('div', { className: "flex gap-2" }, React.createElement('button', { onClick: () => setDWater(Math.max(0, Number(d_water) - 250)), className: "w-10 h-10 bg-white rounded-xl shadow-sm font-bold text-[#040316]" }, "-"), React.createElement('button', { onClick: () => setDWater(Number(d_water) + 250), className: "w-10 h-10 bg-[#f9991a] text-white rounded-xl shadow-md" }, "+"))
+                                        React.createElement('div', { className: "flex gap-2 text-brand" }, React.createElement('button', { onClick: () => setDWater(Math.max(0, Number(d_water) - 250)), className: "w-10 h-10 bg-white rounded-xl shadow-sm font-bold text-[#040316]" }, "-"), React.createElement('button', { onClick: () => setDWater(Number(d_water) + 250), className: "w-10 h-10 bg-[#f9991a] text-white rounded-xl shadow-md" }, "+"))
                                     ),
-                                    ['breakfast', 'lunch', 'dinner', 'snacks'].map(meal => React.createElement('div', { key: meal, className: "space-y-2" },
+                                    ['breakfast', 'lunch', 'dinner', 'snacks'].map(meal => React.createElement('div', { key: meal, className: "space-y-2 text-brand" },
                                         React.createElement('p', { className: "text-[16px] font-bold text-[#5a6a7a] mb-2" }, meal === 'breakfast' ? '早餐' : meal === 'lunch' ? '午餐' : meal === 'dinner' ? '晚餐' : '點心'),
                                         React.createElement('textarea', { value: dietForm[meal], onChange: e => setDietForm(p => ({ ...p, [meal]: e.target.value })), rows: "2", placeholder: "紀錄妳的餐點...", className: "text-[14px] p-3 bg-blue-50/50 rounded-xl w-full border-none outline-none text-[#040316] text-brand" }),
                                         React.createElement('div', { className: "flex gap-2 overflow-x-auto no-scrollbar pt-1 items-center" },
@@ -680,14 +704,14 @@
                         ),
                         React.createElement('div', { className: "flex-1 overflow-y-auto p-4 space-y-4 no-scrollbar text-brand" },
                             React.createElement('div', null, React.createElement('span', { className: "font-bold mb-2 block text-[#5a6a7a] text-[16px]" }, "計畫名稱"), React.createElement('input', { value: newPlanTitle, onChange: e => setNewPlanTitle(e.target.value), placeholder: "首爾衝刺 14 天", className: "text-[14px] w-full bg-blue-50/50 rounded-xl h-11 px-3 outline-none" })),
-                            React.createElement('div', null, React.createElement('span', { className: "font-bold mb-2 block text-[#5a6a7a] text-[16px]" }, "目標日期"), React.createElement('input', { type: "date", value: newPlanDate, onChange: e => setNewPlanDate(e.target.value), className: "text-[14px] w-full bg-blue-50/50 rounded-xl h-11 px-3 outline-none" }), !editingPlanId && React.createElement('div', { className: "flex gap-2 pt-2" }, [7, 14, 30].map(d => React.createElement('button', { key: d, onClick: () => { const obj = new Date(); obj.setDate(obj.getDate() + d); setNewPlanDate(obj.toISOString().split('T')[0]); }, className: "tag-btn text-[12px]" }, `+${d}天`)))),
-                            React.createElement('div', null, React.createElement('span', { className: "font-bold mb-2 block text-[#5a6a7a] text-[16px]" }, "體態設定"), React.createElement('div', { className: "flex items-center gap-2" },
+                            React.createElement('div', null, React.createElement('span', { className: "font-bold mb-2 block text-[#5a6a7a] text-[16px]" }, "目標日期"), React.createElement('input', { type: "date", value: newPlanDate, onChange: e => setNewPlanDate(e.target.value), className: "text-[14px] w-full bg-blue-50/50 rounded-xl h-11 px-3 outline-none" }), !editingPlanId && React.createElement('div', { className: "flex gap-2 pt-2 text-brand" }, [7, 14, 30].map(d => React.createElement('button', { key: d, onClick: () => { const obj = new Date(); obj.setDate(obj.getDate() + d); setNewPlanDate(obj.toISOString().split('T')[0]); }, className: "tag-btn text-[12px]" }, `+${d}天`)))),
+                            React.createElement('div', null, React.createElement('span', { className: "font-bold mb-2 block text-[#5a6a7a] text-[16px]" }, "體態設定"), React.createElement('div', { className: "flex items-center gap-2 text-brand" },
                                 React.createElement('div', { className: "weight-input-card flex-1 p-4 bg-blue-50/50 rounded-[20px] flex flex-col items-center gap-1" }, React.createElement('span', { className: "text-[11px] font-bold text-[#9caeba] uppercase" }, "起始"), React.createElement('div', { className: "flex items-baseline" }, React.createElement('input', { type: "number", step: "0.1", value: newPlanBaselineWeight, onChange: e => setNewPlanBaselineWeight(e.target.value), placeholder: "54.0", className: "w-16 bg-transparent text-center text-[20px] font-bold outline-none" }), React.createElement('span', { className: "text-[12px] font-bold text-[#9caeba] ml-0.5" }, "kg"))),
                                 React.createElement(Icon, { name: "chevron-right", size: 24, className: "text-[#f9991a] opacity-30" }),
                                 React.createElement('div', { className: "weight-input-card flex-1 bg-orange-50/30 p-4 rounded-[20px] flex flex-col items-center gap-1 border border-orange-100" }, React.createElement('span', { className: "text-[11px] font-bold text-[#f9991a] uppercase text-brand" }, "目標"), React.createElement('div', { className: "flex items-baseline" }, React.createElement('input', { type: "number", step: "0.1", value: newPlanTargetWeight, onChange: e => setNewPlanTargetWeight(e.target.value), placeholder: "50.0", className: "!text-[#f9991a] w-16 bg-transparent text-center text-[20px] font-bold outline-none" }), React.createElement('span', { className: "text-[12px] font-bold text-[#f9991a] ml-0.5" }, "kg")))
                             ))
                         ),
-                        React.createElement('div', { className: "p-4 bg-white border-t border-gray-50 pb-4 text-brand" }, React.createElement('button', { onClick: handleCreatePlan, disabled: isSaving || !newPlanDate || !newPlanTitle, className: "primary-btn w-full shadow-lg font-bold tracking-widest uppercase" }, isSaving ? "同步中..." : "啟動計畫"))
+                        React.createElement('div', { className: "p-4 bg-white border-t border-gray-50 pb-4 text-brand" }, React.createElement('button', { onClick: handleCreatePlan, disabled: isSaving || !newPlanDate || !newPlanTitle, className: "primary-btn w-full shadow-lg font-bold tracking-widest uppercase text-brand" }, isSaving ? "同步中..." : "啟動計畫"))
                     )
                 ),
 
